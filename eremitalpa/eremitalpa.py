@@ -7,15 +7,15 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 # Defaults
-edge_kws = dict(
+default_edge_kws = dict(
     color="black",
     linewidth=0.5
 )
-leaf_kws = dict(
+default_leaf_kws = dict(
     color="black",
     s=1
 )
-label_kws = dict(
+default_label_kws = dict(
     horizontalalignment="left",
     verticalalignment="center",
     fontsize=8
@@ -61,17 +61,15 @@ def compute_tree_layout(tree, has_brlens=True):
             node._y = sum(child_y) / len(child_y)
 
     # X and Y limits
-    xs = tuple(node._x for node in tree.preorder_node_iter())
-    ys = tuple(node._y for node in tree.preorder_node_iter())
-    tree._xlim = min(xs), max(xs)
-    tree._ylim = min(ys), max(ys)
+    tree._xlim = 0, max(node._x for node in tree.leaf_nodes())
+    tree._ylim = 0, max(node._y for node in tree.leaf_nodes())
 
     return tree
 
 
-def plot_dendropy_tree(tree, has_brlens=True, edge_kws=edge_kws,
-                       leaf_kws=leaf_kws, ax=None, labels=(),
-                       label_kws=label_kws, compute_layout=True):
+def plot_dendropy_tree(tree, has_brlens=True, edge_kws=default_edge_kws,
+                       leaf_kws=default_leaf_kws, ax=None, labels=(),
+                       label_kws=default_label_kws, compute_layout=True):
     """Plot a dendropy tree object.
 
     Tree nodes are plotted in their current order. So, to ladderize, call
@@ -106,11 +104,13 @@ def plot_dendropy_tree(tree, has_brlens=True, edge_kws=edge_kws,
     """
     ax = plt.gca() if ax is None else ax
 
+    label_kws = {**default_label_kws, **label_kws}
+    leaf_kws = {**default_leaf_kws, **leaf_kws}
+    edge_kws = {**default_edge_kws, **edge_kws}
+
     tree = compute_tree_layout(tree, has_brlens) if compute_layout else tree
 
-    ############
     # Draw edges
-    ############
     edges = []
     for node in tree.preorder_node_iter():
         # Horizontal
@@ -126,15 +126,29 @@ def plot_dendropy_tree(tree, has_brlens=True, edge_kws=edge_kws,
     lc = matplotlib.collections.LineCollection(segments=edges, **edge_kws)
     ax.add_artist(lc)
 
-    #############
     # Draw leaves
-    #############
     ax.scatter(
         tuple(node._x for node in tree.leaf_node_iter()),
         tuple(node._y for node in tree.leaf_node_iter()),
         **leaf_kws)
 
+    # Labels
+    # Test if labels is an iterable.
+        # If it is, label nodes contained in iterable.
+        # If it isn't, but is truthy, label all leaf nodes.
+    try:
+        iter(labels)
+    except TypeError:
+        if labels:
+            for node in tree.leaf_node_iter():
+                plt.text(node._x, node._y, node.taxon.label, **label_kws)
+        else:
+            pass
+    else:
+        for node in tree.find_nodes(lambda n: taxon_in_node_labels(labels, n)):
+            plt.text(node._x, node._y, node.taxon.label, **label_kws)
 
+    # Finalise
     ax.set_xlim(tree._xlim)
     ax.set_ylim(tree._ylim)
     ax.axis("off")
@@ -142,12 +156,6 @@ def plot_dendropy_tree(tree, has_brlens=True, edge_kws=edge_kws,
     ax.invert_yaxis()
 
     return tree, ax
-
-    ############
-    # Label taxa
-    ############
-    # for node in tree.find_nodes(lambda n: taxon_in_node_labels(labels, n)):
-    #     plt.text(node._x, node._y, node.taxon.label, **label_kws)
 
 
 def plot_leaves_with_labels(tree, labels, ax=None, **kws):

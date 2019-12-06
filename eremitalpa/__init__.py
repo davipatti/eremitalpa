@@ -4,5 +4,10 @@ from .eremitalpa import plot_dendropy_tree, taxon_in_node_labels, \
 
 __version__ = "1.1.0"
 
-__all__ = ["__version__", "plot_dendropy_tree", "taxon_in_node_label",
-    "taxon_in_node_labels", "compute_tree_layout"]
+__all__ = [
+    "__version__",
+    "plot_dendropy_tree",
+    "taxon_in_node_label",
+    "taxon_in_node_labels",
+    "compute_tree_layout"
+]
