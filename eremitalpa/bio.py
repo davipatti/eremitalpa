@@ -89,3 +89,28 @@ def sloppy_translate(sequence):
             peptide += 'X'
         i = j
     return peptide
+
+
+def find_mutations(a, b, offset=0):
+    """Find mutations between strings a and b.
+
+    Args:
+        a (str)
+        b (str)
+        offset (int)
+
+    Raises:
+        ValueError if lengths of a an b differ.
+
+    Returns:
+        list of tuples. tuples are like: ('N', 145, 'K') The number indicates
+            the 1-indexed position of the mutation. The first element is the a
+            character. The last element is the b character.
+    """
+    if len(a) != len(b):
+        raise ValueError("a and b must have same length")
+    rv = []
+    for i, (_a, _b) in enumerate(zip(a, b), start=1):
+        if _a != _b:
+            rv.append([_a, i + offset, _b])
+    return rv
