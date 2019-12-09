@@ -33,7 +33,8 @@ class TestFindMutations(unittest.TestCase):
         self.assertEqual(0, len(ere.find_mutations('ABC', 'ABC')))
 
     def test_one_mutation(self):
-        self.assertEqual([["D", 3, "C"]], ere.find_mutations("ABD", "ABC"))
+        self.assertEqual((ere.Mutation("D", 3, "C"),),
+                          ere.find_mutations("ABD", "ABC"))
 
     def test_raises_with_len_mismatch(self):
         with self.assertRaises(ValueError):

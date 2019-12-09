@@ -110,8 +110,33 @@ def find_mutations(a, b, offset=0):
     """
     if len(a) != len(b):
         raise ValueError("a and b must have same length")
-    rv = []
-    for i, (_a, _b) in enumerate(zip(a, b), start=1):
-        if _a != _b:
-            rv.append([_a, i + offset, _b])
-    return rv
+
+    return tuple(
+        Mutation(_a, i + offset, _b)
+        for i, (_a, _b) in enumerate(zip(a, b), start=1)
+        if _a != _b
+    )
+
+
+class Mutation():
+
+    def __init__(self, a, pos, b):
+        self.a = a
+        self.pos = int(pos)
+        self.b = b
+        self._elements = (a, pos, b)
+
+    def __repr__(self):
+        return "Mutation(a={}, pos={}, b={})".format(self.a, self.pos, self.b)
+
+    def __str__(self):
+        return "{}{}{}".format(self.a, self.pos, self.b)
+
+    def __getitem__(self, pos):
+        return self._elements[pos]
+
+    def __hash__(self):
+        return hash(str(self))
+
+    def __eq__(self, other):
+        return self._elements == other._elements
