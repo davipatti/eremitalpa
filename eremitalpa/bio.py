@@ -73,14 +73,15 @@ def sloppy_translate(sequence):
     contains any character not in [ATCG] then return X.
 
     Args:
-        sequence (str)
+        sequence (str): Lower or upper case.
 
     Returns:
         (str)
     """
+    sequence = sequence.upper()
     i = 0
     peptide = ''
-    while i < len(sequence):
+    while i <= len(sequence) - 3:
         j = i + 3
         codon = sequence[i:j]
         try:

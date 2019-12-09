@@ -9,6 +9,20 @@ class TestSloppyTranslate(unittest.TestCase):
     def test_atg(self):
         self.assertEqual('M', ere.sloppy_translate('ATG'))
 
+    def test_lower_case(self):
+        self.assertEqual('M', ere.sloppy_translate('atg'))
+
+    def test_two_codon(self):
+        self.assertEqual('FA', ere.sloppy_translate('TTTGCT'))
+
+    def test_seven_bases(self):
+        """Ignore tailing nucleotides."""
+        self.assertEqual('FA', ere.sloppy_translate('TTTGCTA'))
+
+    def test_eight_bases(self):
+        """Ignore trailing nucleotides."""
+        self.assertEqual('FA', ere.sloppy_translate('TTTGCTAC'))
+
     def test_question(self):
         self.assertEqual('X', ere.sloppy_translate('?TG'))
 
