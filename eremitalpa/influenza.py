@@ -69,6 +69,26 @@ for cluster, motifs in _cluster_motifs.items():
     for motif in motifs:
         _motif_to_cluster[motif] = cluster
 
+"""Cluster colours."""
+cluster_colors = {
+    "HK68": "#A208BD",  # Purple
+    "EN72": "#33CCCC",  # Dark cyan
+    "VI75": "#F9D004",  # Yellow
+    "TX77": "#AB4C00",  # Brown
+    "BK79": "#3BBA30",  # Green
+    "SI87": "#0000FF",  # Blue
+    "BE89": "#FF0000",  # Red
+    "BE92": "#F894F8",  # Pink
+    "WU95": "#37802B",  # Dark green
+    "SY97": "#00AFFF",  # Light blue
+    "FU02": "#B3C261",  # Green
+    "CA04": "#FC5A03",  # Lemon
+    "WI05": "#3E809C",  # Blue
+    "PE09": "#F0FC03",  # Orange
+    "SW13": "#FFD700",  # Gold
+    "HK14": "#9CA9B5",  # Grey
+}
+
 
 def cluster_from_ha(sequence, seq_type="long"):
     """Classify an amino acid sequence as an antignenic cluster.
