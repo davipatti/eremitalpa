@@ -15,6 +15,7 @@ default_leaf_kws = dict(
     color="black",
     s=1
 )
+default_internal_kws = dict()
 default_label_kws = dict(
     horizontalalignment="left",
     verticalalignment="center",
@@ -68,8 +69,9 @@ def compute_tree_layout(tree, has_brlens=True):
 
 
 def plot_dendropy_tree(tree, has_brlens=True, edge_kws=default_edge_kws,
-                       leaf_kws=default_leaf_kws, ax=None, labels=(),
-                       label_kws=default_label_kws, compute_layout=True):
+                       leaf_kws=default_leaf_kws, internal_kws=default_internal_kws, ax=None,
+                       labels=(), label_kws=default_label_kws,
+                       compute_layout=True):
     """Plot a dendropy tree object.
 
     Tree nodes are plotted in their current order. So, to ladderize, call
@@ -84,6 +86,9 @@ def plot_dendropy_tree(tree, has_brlens=True, edge_kws=default_edge_kws,
         leaf_kws (dict). Keyword arguments for leafs, passed to ax.scatter.
             For arguments that can be a vector, the order and length should
             match tree.leaf_node_iter().
+        internal_kws (dict). Keyword arguments for internal nodes. Passed to
+            ax.scatter. For arguments that can be a vector, the order and
+            length should match tree.internal_nodes().
         ax (matplotlib.ax).
         labels (iterable). Names of taxa to add labels for.
         compute_layout (bool). Compute the layout or not. If the tree nodes
@@ -107,6 +112,7 @@ def plot_dendropy_tree(tree, has_brlens=True, edge_kws=default_edge_kws,
     label_kws = {**default_label_kws, **label_kws}
     leaf_kws = {**default_leaf_kws, **leaf_kws}
     edge_kws = {**default_edge_kws, **edge_kws}
+    internal_kws = {**default_internal_kws,**internal_kws}
 
     tree = compute_tree_layout(tree, has_brlens) if compute_layout else tree
 
@@ -131,6 +137,13 @@ def plot_dendropy_tree(tree, has_brlens=True, edge_kws=default_edge_kws,
         tuple(node._x for node in tree.leaf_node_iter()),
         tuple(node._y for node in tree.leaf_node_iter()),
         **leaf_kws)
+
+    # Draw internal nodes
+    if internal_kws:
+        ax.scatter(
+            tuple(node._x for node in tree.internal_nodes()),
+            tuple(node._y for node in tree.internal_nodes()),
+            **internal_kws)
 
     # Labels
     # Test if labels is an iterable.
