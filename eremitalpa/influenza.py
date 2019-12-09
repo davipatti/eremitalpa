@@ -85,7 +85,7 @@ cluster_colors = {
     "CA04": "#FC5A03",  # Lemon
     "WI05": "#3E809C",  # Blue
     "PE09": "#F0FC03",  # Orange
-    "SW13": "#FFD700",  # Gold
+    "SW13": "#B3DE69",  # Green
     "HK14": "#9CA9B5",  # Grey
 }
 
