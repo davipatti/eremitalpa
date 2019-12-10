@@ -6,6 +6,8 @@ import dendropy
 import matplotlib
 import matplotlib.pyplot as plt
 
+from operator import attrgetter
+
 # Defaults
 default_edge_kws = dict(
     color="black",
@@ -24,7 +26,7 @@ default_label_kws = dict(
 
 
 def compute_tree_layout(tree, has_brlens=True):
-    """Decorate a tree with layout parameters.
+    """Compute layout parameters for a tree.
 
     Each node gets _x and _y values.
     The tree gets _xlim and _ylim values (tuples).
@@ -112,7 +114,7 @@ def plot_dendropy_tree(tree, has_brlens=True, edge_kws=default_edge_kws,
     label_kws = {**default_label_kws, **label_kws}
     leaf_kws = {**default_leaf_kws, **leaf_kws}
     edge_kws = {**default_edge_kws, **edge_kws}
-    internal_kws = {**default_internal_kws,**internal_kws}
+    internal_kws = {**default_internal_kws, **internal_kws}
 
     tree = compute_tree_layout(tree, has_brlens) if compute_layout else tree
 
@@ -215,9 +217,44 @@ def taxon_in_node_labels(labels, node):
     except AttributeError:
         return False
 
+
 def taxon_in_node_label(label, node):
     """True if a node has a matching taxon label"""
     try:
         return node.taxon.label == label
     except AttributeError:
         return False
+
+
+def trunk(tree):
+    """Ordered nodes in tree, from deepest leaf to root.
+
+    Args:
+        tree (dendropy Tree)
+
+    Returns:
+        tuple containin dendropy Nodes
+    """
+    node = deepest_leaf(tree)
+    trunk = []
+    while hasattr(node, "parent_node"):
+        trunk.append(node)
+        node = node.parent_node
+    return tuple(trunk)
+
+
+def deepest_leaf(tree):
+    """Find the deepest leaf node in the tree.
+
+    Args:
+        tree (dendropy Tree)
+
+    Returns:
+        dendropy Node
+    """
+    try:
+        return max(tree.leaf_node_iter(), key=attrgetter("_x"))
+
+    except AttributeError:
+        tree = compute_tree_layout(tree)
+        return max(tree.leaf_node_iter(), key=attrgetter("_x"))

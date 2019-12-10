@@ -20,6 +20,7 @@ _cluster_motifs = {
     ),
     "BK79": (
         "NYEESKN",
+        "NYEEYKN",
     ),
     "SI87": (
         "NHEEYRN",
