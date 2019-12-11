@@ -2,11 +2,11 @@
 Drawing phylogenetic trees (dendropy.Tree instances) using matplotlib.
 """
 
-import dendropy
+from Bio import SeqIO
+from operator import attrgetter
+import dendropy as dp
 import matplotlib
 import matplotlib.pyplot as plt
-
-from operator import attrgetter
 
 # Defaults
 default_edge_kws = dict(
@@ -39,7 +39,7 @@ def compute_tree_layout(tree, has_brlens=True):
         dendropy.Tree
     """
     # Fresh tree instance
-    tree = dendropy.Tree(tree)
+    tree = dp.Tree(tree)
 
     # Add branch lengths if necessary
     if not has_brlens:
@@ -257,3 +257,76 @@ def deepest_leaf(tree):
     except AttributeError:
         tree = compute_tree_layout(tree)
         return max(tree.leaf_node_iter(), key=attrgetter("_x"))
+
+
+def read_raxml_ancestral_sequences(tree, node_labelled_tree, ancestral_seqs,
+                                   leaf_seqs=None):
+    """Read a tree and ancestral sequences estimated by RAxML.
+
+    RAxML can estimate marginal ancestral sequences for internal nodes on a
+    tree using a call like:
+
+        raxmlHPC -f A -t {treeFile} -s {sequenceFile} -m {model} -n {name}
+
+    The analysis outputs several files:
+
+    - RAxML_nodeLabelledRootedTree.{name} contains a copy of the input tree
+        where all internal nodes have a unique identifier {id}.
+    - RAxML_marginalAncestralStates.{name} contains the ancestral sequence for
+        each internal node. The format of each line is '{id} {sequence}'
+    - RAxML_marginalAncestralProbabilities.{name} contains probabilities of
+        each base at each site for each internal node. (Not used by this
+        function.)
+
+    Notes:
+        Developed with output from RAxML version 8.2.12.
+
+    Args:
+        tree (str): Path to original input tree ({treeFile}).
+        node_labelled_tree (str): Path to the tree with node labels.
+            (RAxML_nodeLabelledRootedTree.{name})
+        ancestral_seqs (str): Path to file containing the ancestral sequences.
+            (RAxML_marginalAncestralStates.{name})
+        leaf_seqs (str): (Optional) path to fasta file containing leaf
+            sequences. ({sequenceFile}). If this is provided, also attach
+            sequences to leaf nodes.
+
+    Returns:
+        (dendropy Tree) with sequences attached to nodes. Sequences are
+            attached as 'sequence' attributes on Nodes.
+    """
+    tree = dp.Tree.get(path=tree, schema="newick", preserve_underscores=True)
+    labelled_tree = dp.Tree.get(path=node_labelled_tree, schema="newick",
+                                preserve_underscores=True)
+
+    # Dict mapping leaf labels -> node label
+    leaves_to_labelled_node = {sorted_leaf_labels(node): node.label
+                               for node in labelled_tree.nodes()}
+
+    internal_sequences = {}
+    with open(ancestral_seqs, "r") as handle:
+        for line in handle.readlines():
+            key, sequence = line.strip().split()
+            internal_sequences[key] = sequence
+
+    for node in tree.internal_nodes():
+        leaves = sorted_leaf_labels(node)
+        key = leaves_to_labelled_node[leaves]
+        node.sequence = internal_sequences[key]
+
+    if leaf_seqs:
+
+        leaf_sequences = {}
+        with open(leaf_seqs, "r") as handle:
+            for r in SeqIO.parse(handle, format="fasta"):
+                leaf_sequences[r.description] = str(r.seq)
+
+        for node in tree.leaf_node_iter():
+            node.sequence = leaf_sequences[node.taxon.label]
+
+    return tree
+
+
+def sorted_leaf_labels(node):
+    """Tuple containing the sorted leaf labels of a node."""
+    return tuple(sorted(leaf.taxon.label for leaf in node.leaf_nodes()))
