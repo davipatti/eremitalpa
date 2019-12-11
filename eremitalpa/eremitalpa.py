@@ -70,10 +70,9 @@ def compute_tree_layout(tree, has_brlens=True):
     return tree
 
 
-def plot_dendropy_tree(tree, has_brlens=True, edge_kws=default_edge_kws,
-                       leaf_kws=default_leaf_kws, internal_kws=default_internal_kws, ax=None,
-                       labels=(), label_kws=default_label_kws,
-                       compute_layout=True):
+def plot_tree(tree, has_brlens=True, edge_kws=default_edge_kws,
+              leaf_kws=default_leaf_kws, internal_kws=default_internal_kws, ax=None, labels=(), label_kws=default_label_kws,
+              compute_layout=True):
     """Plot a dendropy tree object.
 
     Tree nodes are plotted in their current order. So, to ladderize, call
