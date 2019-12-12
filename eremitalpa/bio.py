@@ -87,7 +87,10 @@ def sloppy_translate(sequence):
         try:
             peptide += FORWARD_CODON_TABLE[codon]
         except KeyError:
-            peptide += 'X'
+            if codon == '---':
+                peptide += '-'
+            else:
+                peptide += 'X'
         i = j
     return peptide
 
