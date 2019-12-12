@@ -3,10 +3,13 @@ Drawing phylogenetic trees (dendropy.Tree instances) using matplotlib.
 """
 
 from Bio import SeqIO
+from matplotlib.collections import LineCollection
 from operator import attrgetter
+import copy
 import dendropy as dp
 import matplotlib
 import matplotlib.pyplot as plt
+
 
 # Defaults
 default_edge_kws = dict(
@@ -330,3 +333,90 @@ def read_raxml_ancestral_sequences(tree, node_labelled_tree, ancestral_seqs,
 def sorted_leaf_labels(node):
     """Tuple containing the sorted leaf labels of a node."""
     return tuple(sorted(leaf.taxon.label for leaf in node.leaf_nodes()))
+
+
+def compare_trees(left, right, gap=0.1, connect_kws=dict(), extend_kws=dict(),
+                  extend_every=10, left_kws=dict(), right_kws=dict(),
+                  connect_colors=dict(), extend_colors=dict()):
+    """Plot two phylogenies side by side, and join the same taxa in each tree.
+
+    Args:
+        left (dendropy Tree)
+        right (dendropy Tree)
+        gap (float): Space between the two trees.
+        connect_kws (dict): Keywords passed to matplotlib LineCollection.
+            These are used for the lines that connect matching taxa.
+        extend_kws (dict): Keywords passed to matplotlib LineCollection.
+            These are used for lines that connect taxa to the conection lines.
+        extend_every (n): Draw branch extension lines every n leaves.
+        left_kws (dict): Passed to plot_tree for the left tree.
+        right_kws (dict): Passed to plot_tree for the right tree.
+        connect_colors (dict): Maps taxon labels to colors. Ignored if 'colors'
+            is used in connect_kws.
+
+    Returns:
+        (2-tuple) containing dendropy Trees with _x and _y plot locations on
+            nodes.
+    """
+    left = compute_tree_layout(left)
+    right = compute_tree_layout(right)
+
+    # Reflect the right tree
+    constant = left._xlim[1] + right._xlim[1] + gap
+    for node in right.nodes():
+        node._x *= -1
+        node._x += constant
+
+    # Cris-crossing lines that connect matching taxa in left and right
+    if connect_kws:
+        segments = []
+        colors = [] if "colors" not in connect_kws and connect_colors else None
+
+        for node in left.leaf_node_iter():
+
+            other = right.find_node_with_taxon_label(node.taxon.label)
+
+            if other:
+                segments.append(
+                    ((left._xlim[1], node._y), (left._xlim[1] + gap, other._y)))
+
+                if colors is not None:
+                    colors.append(connect_colors[node.taxon.label])
+
+        if colors is not None:
+            connect_kws["colors"] = colors
+
+        plt.gca().add_artist(LineCollection(segments, **connect_kws))
+
+    # Extend branches horizontally from the left and right trees to meet the
+    # cris-crossing lines
+    if extend_kws:
+        segments = []
+        colors = [] if "colors" not in extend_kws and extend_colors else None
+        key = attrgetter("_y")
+
+        for node in sorted(left.leaf_node_iter(), key=key)[::extend_every]:
+            segments.append(
+                ((node._x, node._y), (left._xlim[1], node._y)))
+
+            if colors is not None:
+                colors.append(extend_colors[node.taxon.label])
+
+        for node in sorted(right.leaf_node_iter(), key=key)[::extend_every]:
+            segments.append(
+                ((left._xlim[1] + gap, node._y), (node._x, node._y)))
+
+            if colors is not None:
+                colors.append(extend_colors[node.taxon.label])
+
+        if colors is not None:
+            extend_kws["colors"] = colors
+
+        plt.gca().add_artist(LineCollection(segments, **extend_kws))
+
+    plot_tree(left, compute_layout=False, **left_kws)
+    plot_tree(right, compute_layout=False, **right_kws)
+
+    plt.xlim(0, constant)
+
+    return left, right
