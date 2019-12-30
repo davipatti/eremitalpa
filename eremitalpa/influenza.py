@@ -256,6 +256,7 @@ def clusters_with_matching_key_residues(sequence, ignore="-X"):
 
     Args:
         sequence (str): Amino acid sequence. At least 193 residues long.
+        ignore (str): Ignore these characters.
 
     Returns:
         list of clusters with matching key residues.
@@ -353,6 +354,9 @@ class Cluster():
 
     def __eq__(self, other):
         return str(self) == str(other)
+
+    def __hash__(self):
+        return hash(str(self))
 
     @property
     def year(self):
