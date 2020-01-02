@@ -361,7 +361,10 @@ class Cluster():
     @property
     def year(self):
         digits = int(self._name[-2:])
-        return digits + 1900 if digits < 1967 else digits + 2000
+        if digits < 67:
+            return digits + 2000
+        else:
+            return digits + 1900
 
     @property
     def key_residues(self):

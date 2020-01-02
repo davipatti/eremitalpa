@@ -72,6 +72,18 @@ class TestHammingDistance(unittest.TestCase):
         self.assertEqual(1 / 12 , ere.hamming_dist(
             "D-VIDPATTINSON", "NAVIDPaTTIXSON", per_site=True))
 
+    def test_hk68_year(self):
+        self.assertEqual(1968, ere.Cluster("HK68").year)
+
+    def test_fuo2_year(self):
+        self.assertEqual(2002, ere.Cluster("FU02").year)
+
+    def test_vi75_gt_hk68(self):
+        self.assertGreater(ere.Cluster("VI75"), ere.Cluster("HK68"))
+
+    def test_fu02_gt_sy97(self):
+        self.assertGreater(ere.Cluster("FU02"), ere.Cluster("SY97"))
+
 
 if __name__ == "__main__":
     unittest.main()
