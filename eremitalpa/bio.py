@@ -123,23 +123,43 @@ def find_mutations(a, b, offset=0):
 
 class Mutation():
 
-    def __init__(self, a, pos, b):
-        self.a = a
-        self.pos = int(pos)
-        self.b = b
-        self._elements = (a, pos, b)
+    def __init__(self, *args):
+        """Change of a character at a site.
+
+        Instantiate using either 1 or three arguments:
+            Mutation("N145K") or Mutation("N", 145, "K")
+        """
+        if len(args) == 1:
+            arg = args[0]
+            self.a = arg[0]
+            self.pos = int(arg[1:-1])
+            self.b = arg[-1]
+        elif len(args) == 3:
+            self.a = args[0]
+            self.pos = int(args[1])
+            self.b = args[-1]
+        else:
+            raise ValueError("Pass 1 or 3 arguments. E.g. Mutation('N145K') or "
+                             "Mutation('N', 145, 'K')")
+        self._elements = (self.a, self.pos, self.b)
 
     def __repr__(self):
-        return "Mutation(a={}, pos={}, b={})".format(self.a, self.pos, self.b)
+        return "Mutation({}, {}, {})".format(self.a, self.pos, self.b)
 
     def __str__(self):
         return "{}{}{}".format(self.a, self.pos, self.b)
+
+    def __gt__(self, other):
+        return (self.pos, self.a, self.b) > (other.pos, other.a, other.b)
+
+    def __lt__(self, other):
+        return (self.pos, self.a, self.b) < (other.pos, other.a, other.b)
+
+    def __eq__(self, other):
+        return self._elements == other._elements
 
     def __getitem__(self, pos):
         return self._elements[pos]
 
     def __hash__(self):
         return hash(str(self))
-
-    def __eq__(self, other):
-        return self._elements == other._elements

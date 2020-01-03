@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import unittest
+
 import eremitalpa as ere
 
 
@@ -34,11 +35,31 @@ class TestFindMutations(unittest.TestCase):
 
     def test_one_mutation(self):
         self.assertEqual((ere.Mutation("D", 3, "C"),),
-                          ere.find_mutations("ABD", "ABC"))
+                         ere.find_mutations("ABD", "ABC"))
 
     def test_raises_with_len_mismatch(self):
         with self.assertRaises(ValueError):
             ere.find_mutations("ABC", "AB")
+
+
+class TestMutation(unittest.TestCase):
+
+    def test_from_3_args(self):
+        m = ere.Mutation("N", 145, "K")
+        self.assertEqual("N", m.a)
+        self.assertEqual("K", m.b)
+        self.assertEqual(145, m.pos)
+
+    def test_from_1_arg(self):
+        m = ere.Mutation("N145K")
+        self.assertEqual("N", m.a)
+        self.assertEqual("K", m.b)
+        self.assertEqual(145, m.pos)
+
+    def test_two_instances_same_hash(self):
+        a = ere.Mutation("N145K")
+        b = ere.Mutation("N145K")
+        self.assertEqual(hash(a), hash(b))
 
 
 if __name__ == "__main__":
