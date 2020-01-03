@@ -188,7 +188,6 @@ def plot_leaves_with_labels(tree, labels, ax=None, **kws):
     s = kws.pop("s", 20)
     c = kws.pop("c", "red")
     zorder = kws.pop("zorder", 19)
-    clip_on = kws.pop("clip_on", False)
     linewidth = kws.pop("linewidth", 0.5)
     edgecolor = kws.pop("edgecolor", "white")
     nodes = tree.find_nodes(lambda n: taxon_in_node_labels(labels, n))
