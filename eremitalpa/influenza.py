@@ -1,6 +1,7 @@
 from functools import partial
 from itertools import combinations
 from operator import itemgetter
+from .bio import hamming_dist
 
 """
 Influenza related data.
@@ -298,59 +299,6 @@ def hamming_to_cluster(sequence, cluster, **kws):
         int
     """
     return hamming_dist(sequence, Cluster(cluster).sequence, **kws)
-
-
-def hamming_dist(a, b, ignore="-X", case_sensitive=True, per_site=False):
-    """The hamming distance between a and b.
-
-    Args:
-        a (str)
-        b (str)
-        ignore (str): String containing characters to ignore. If there is a
-            mismatch where one string has a character in igonre, this does not
-            contribute to the hamming distance.
-        per_site (bool): Divide the hamming distance by the length of a and b,
-            minus the number of sites with ignored characters.
-
-    Returns:
-        float
-    """
-    if len(a) != len(b):
-        raise ValueError("a and b must be same len")
-    if not case_sensitive:
-        a = a.upper()
-        b = b.upper()
-        ignore = ignore.upper()
-    d = 0
-    if per_site:
-        l = 0
-        for m, n in zip(a, b):
-            if (m not in ignore) and (n not in ignore):
-                l += 1
-                if m != n:
-                    d += 1
-        try:
-            return d / l
-        except ZeroDivisionError:
-            return 0.0
-    else:
-        for m, n in zip(a, b):
-            if (m != n) and (m not in ignore) and (n not in ignore):
-                d += 1
-        return float(d)
-
-
-def pairwise_hamming_dists(collection, ignore="-X", per_site=False):
-    """Compute all pairwise hamming distances between items in collection.
-
-    Args:
-        collection (iterable)
-
-    Returns:
-        list of hamming distances
-    """
-    return [hamming_dist(a, b, ignore=ignore, per_site=per_site)
-            for a, b in combinations(collection, 2)]
 
 
 class Cluster():

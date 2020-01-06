@@ -1,3 +1,5 @@
+from itertools import combinations
+
 amino_acid_colors = {
     "A": "#F76A05",
     "C": "#dde8cf",
@@ -90,6 +92,9 @@ FORWARD_CODON_TABLE = {
     'TTT': 'F',
 }
 
+TRANSLATION_TABLE = dict(FORWARD_CODON_TABLE)
+TRANSLATION_TABLE["---"] = "-"
+
 
 def sloppy_translate(sequence):
     """Translate a nucleotide sequence.
@@ -104,19 +109,15 @@ def sloppy_translate(sequence):
         (str)
     """
     sequence = sequence.upper()
-    i = 0
-    peptide = ''
-    while i <= len(sequence) - 3:
-        j = i + 3
+    peptide = ""
+    ii = range(0, len(sequence), 3)
+    jj = range(3, len(sequence) + 3, 3)
+    for i, j in zip(ii, jj):
         codon = sequence[i:j]
         try:
-            peptide += FORWARD_CODON_TABLE[codon]
+            peptide += TRANSLATION_TABLE[codon]
         except KeyError:
-            if codon == '---':
-                peptide += '-'
-            else:
-                peptide += 'X'
-        i = j
+            peptide += "X"
     return peptide
 
 
@@ -188,3 +189,58 @@ class Mutation():
 
     def __hash__(self):
         return hash(str(self))
+
+
+def hamming_dist(a, b, ignore="-X", case_sensitive=True, per_site=False):
+    """The hamming distance between a and b.
+
+    Args:
+        a (str)
+        b (str)
+        ignore (str): String containing characters to ignore. If there is a
+            mismatch where one string has a character in igonre, this does not
+            contribute to the hamming distance.
+        per_site (bool): Divide the hamming distance by the length of a and b,
+            minus the number of sites with ignored characters.
+
+    Returns:
+        float
+    """
+    if len(a) != len(b):
+        raise ValueError(f"Length mismatch ({len(a)} vs. {len(b)}):\n"
+                         f"a: {a}\n"
+                         f"b: {b}")
+    if not case_sensitive:
+        a = a.upper()
+        b = b.upper()
+        ignore = ignore.upper()
+    d = 0
+    if per_site:
+        l = 0
+        for m, n in zip(a, b):
+            if (m not in ignore) and (n not in ignore):
+                l += 1
+                if m != n:
+                    d += 1
+        try:
+            return d / l
+        except ZeroDivisionError:
+            return 0.0
+    else:
+        for m, n in zip(a, b):
+            if (m != n) and (m not in ignore) and (n not in ignore):
+                d += 1
+        return float(d)
+
+
+def pairwise_hamming_dists(collection, ignore="-X", per_site=False):
+    """Compute all pairwise hamming distances between items in collection.
+
+    Args:
+        collection (iterable)
+
+    Returns:
+        list of hamming distances
+    """
+    return [hamming_dist(a, b, ignore=ignore, per_site=per_site)
+            for a, b in combinations(collection, 2)]
