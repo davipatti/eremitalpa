@@ -27,6 +27,7 @@ __all__ = [
     "Mutation",
     "pairwise_hamming_dists",
     "plot_tree",
+    "plot_leaves_with_labels",
     "read_raxml_ancestral_sequences",
     "sloppy_translate",
     "taxon_in_node_label",

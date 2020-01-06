@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-import sys
 
 import dendropy
 import matplotlib.pyplot as plt

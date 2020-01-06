@@ -1,5 +1,3 @@
-from functools import partial
-from itertools import combinations
 from operator import itemgetter
 from .bio import hamming_dist
 

@@ -2,14 +2,13 @@
 Drawing phylogenetic trees (dendropy.Tree instances) using matplotlib.
 """
 
-from Bio import SeqIO
-from matplotlib.collections import LineCollection
 from operator import attrgetter
-import copy
+
 import dendropy as dp
 import matplotlib
 import matplotlib.pyplot as plt
-
+from Bio import SeqIO
+from matplotlib.collections import LineCollection
 
 # Defaults
 default_edge_kws = dict(
@@ -207,7 +206,7 @@ def plot_leaves_with_labels(tree, labels, ax=None, **kws):
         print("Node(s) do not have _y attribute. Run compute_tree_layout.")
         raise(err)
 
-    ax.scatter(x, y, s=s, c=c, zorder=zorder, clip_on=clip_on,
+    ax.scatter(x, y, s=s, c=c, zorder=zorder,
                linewidth=linewidth, edgecolor=edgecolor, **kws)
 
 
