@@ -8,30 +8,30 @@ import eremitalpa as ere
 class TestSloppyTranslate(unittest.TestCase):
 
     def test_atg(self):
-        self.assertEqual('M', ere.sloppy_translate('ATG'))
+        self.assertEqual("M", ere.sloppy_translate("ATG"))
 
     def test_lower_case(self):
-        self.assertEqual('M', ere.sloppy_translate('atg'))
+        self.assertEqual("M", ere.sloppy_translate("atg"))
 
     def test_two_codon(self):
-        self.assertEqual('FA', ere.sloppy_translate('TTTGCT'))
+        self.assertEqual("FA", ere.sloppy_translate("TTTGCT"))
 
     def test_seven_bases(self):
         """Trailing nucleotides should generate trailing Xs."""
-        self.assertEqual('FAX', ere.sloppy_translate('TTTGCTA'))
+        self.assertEqual("FAX", ere.sloppy_translate("TTTGCTA"))
 
     def test_eight_bases(self):
         """Trailing nucleotides should generate trailing Xs."""
-        self.assertEqual('FAX', ere.sloppy_translate('TTTGCTAC'))
+        self.assertEqual("FAX", ere.sloppy_translate("TTTGCTAC"))
 
     def test_question(self):
-        self.assertEqual('X', ere.sloppy_translate('?TG'))
+        self.assertEqual("X", ere.sloppy_translate("?TG"))
 
 
 class TestFindMutations(unittest.TestCase):
 
     def test_no_mutations(self):
-        self.assertEqual(0, len(ere.find_mutations('ABC', 'ABC')))
+        self.assertEqual(0, len(ere.find_mutations("ABC", "ABC")))
 
     def test_one_mutation(self):
         self.assertEqual((ere.Mutation("D", 3, "C"),),
