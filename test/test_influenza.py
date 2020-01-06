@@ -95,37 +95,54 @@ class TestCluster(unittest.TestCase):
         self.assertEqual("K", kr[156])
         self.assertEqual("N", kr[145])
 
-# def test_key_residues_WU95(self):
-#     kr = ere.Cluster("WU95").key_residues
-#     self.assertEqual(, len(kr))
-#
-# def test_key_residues_SY97(self):
-#     kr = ere.Cluster("SY97").key_residues
-#     self.assertEqual(, len(kr))
-#
-# def test_key_residues_FU02(self):
-#     kr = ere.Cluster("FU02").key_residues
-#     self.assertEqual(, len(kr))
-#
-# def test_key_residues_CA04(self):
-#     kr = ere.Cluster("CA04").key_residues
-#     self.assertEqual(, len(kr))
-#
-# def test_key_residues_WI05(self):
-#     kr = ere.Cluster("WI05").key_residues
-#     self.assertEqual(, len(kr))
-#
-# def test_key_residues_PE09(self):
-#     kr = ere.Cluster("PE09").key_residues
-#     self.assertEqual(, len(kr))
-#
-# def test_key_residues_SW13(self):
-#     kr = ere.Cluster("SW13").key_residues
-#     self.assertEqual(, len(kr))
-#
-# def test_key_residues_SW14(self):
-#     kr = ere.Cluster("SW14").key_residues
-#     self.assertEqual(, len(kr))
+    def test_key_residues_WU95(self):
+        kr = ere.Cluster("WU95").key_residues
+        self.assertEqual(3, len(kr))
+        self.assertEqual("K", kr[145])
+        self.assertEqual("K", kr[156])
+        self.assertEqual("E", kr[158])
+
+    def test_key_residues_SY97(self):
+        kr = ere.Cluster("SY97").key_residues
+        self.assertEqual(2, len(kr))
+        self.assertEqual("Q", kr[156])
+        self.assertEqual("K", kr[158])
+
+    def test_key_residues_FU02(self):
+        kr = ere.Cluster("FU02").key_residues
+        self.assertEqual(2, len(kr))
+        self.assertEqual("H", kr[156])
+        self.assertEqual("K", kr[145])
+
+    def test_key_residues_CA04(self):
+        kr = ere.Cluster("CA04").key_residues
+        self.assertEqual(2, len(kr))
+        self.assertEqual("N", kr[145])
+        self.assertEqual("S", kr[193])
+
+    def test_key_residues_WI05(self):
+        kr = ere.Cluster("WI05").key_residues
+        self.assertEqual(3, len(kr))
+        self.assertEqual("F", kr[193])
+        self.assertEqual("K", kr[158])
+        self.assertEqual("N", kr[189])
+
+    def test_key_residues_PE09(self):
+        kr = ere.Cluster("PE09").key_residues
+        self.assertEqual(3, len(kr))
+        self.assertEqual("N", kr[158])
+        self.assertEqual("K", kr[189])
+        self.assertEqual("F", kr[159])
+
+    def test_key_residues_SW13(self):
+        kr = ere.Cluster("SW13").key_residues
+        self.assertEqual(1, len(kr))
+        self.assertEqual("S", kr[159])
+
+    def test_key_residues_HK14(self):
+        kr = ere.Cluster("HK14").key_residues
+        self.assertEqual(1, len(kr))
+        self.assertEqual("Y", kr[159])
 
 
 if __name__ == "__main__":
