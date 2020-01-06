@@ -17,12 +17,12 @@ class TestSloppyTranslate(unittest.TestCase):
         self.assertEqual('FA', ere.sloppy_translate('TTTGCT'))
 
     def test_seven_bases(self):
-        """Ignore tailing nucleotides."""
-        self.assertEqual('FA', ere.sloppy_translate('TTTGCTA'))
+        """Trailing nucleotides should generate trailing Xs."""
+        self.assertEqual('FAX', ere.sloppy_translate('TTTGCTA'))
 
     def test_eight_bases(self):
-        """Ignore trailing nucleotides."""
-        self.assertEqual('FA', ere.sloppy_translate('TTTGCTAC'))
+        """Trailing nucleotides should generate trailing Xs."""
+        self.assertEqual('FAX', ere.sloppy_translate('TTTGCTAC'))
 
     def test_question(self):
         self.assertEqual('X', ere.sloppy_translate('?TG'))
