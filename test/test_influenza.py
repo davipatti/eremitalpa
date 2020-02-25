@@ -8,13 +8,14 @@ import eremitalpa as ere
 
 
 class TestClassifyCluster(unittest.TestCase):
-
     def test_cluster_motifs_all_unique(self):
         motifs = reduce(add, [list(v) for v in ere._cluster_motifs.values()])
         for motif in motifs:
-            self.assertEqual(1, motifs.count(motif),
-                             "{} occurs more than once in "
-                             "_cluster_motifs".format(motif))
+            self.assertEqual(
+                1,
+                motifs.count(motif),
+                "{} occurs more than once in " "_cluster_motifs".format(motif),
+            )
 
     def test_cluster_motifs_are_tuples(self):
         for v in ere._cluster_motifs.values():
@@ -34,8 +35,23 @@ class TestClassifyCluster(unittest.TestCase):
             ere.cluster_from_ha("DAVIDPA", seq_type="b7")
 
 
-class TestCluster(unittest.TestCase):
+class TestClassifyCluster2(unittest.TestCase):
 
+    def test_ca04_prototype(self):
+        seq = "QKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGGICDSPHQILDGENCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSSCKRRSNNSFFSRLNWLTHLKFKYPALNVTMPNNEKFDKLYIWGVHHPGTNNDQISLYTQASGRITVSTKRSQQTVIPNIGSRPRVRDIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQT"
+        self.assertEqual("CA04", ere.cluster_from_ha_2(seq))
+
+    def test_fu02_prototype(self):
+        seq = "QKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGGICDSPHQILDGENCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACKRRSNKSFFSRLNWLTHLKYKYPALNVTMPNNEKFDKLYIWGVHHPGTDSDQISLYAQASGRITVSTKRSQQTVIPNIGSRPRVRDVSSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQT"
+        self.assertEqual("FU02", ere.cluster_from_ha_2(seq))
+
+    def test_wi05_prototype(self):
+        """This sequence is from the WI05 prototype virus."""
+        seq = "QKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGGICDSPHQILDGENCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNDESFNWTGVTQNGTSSSCKRRSNNSFFSRLNWLTHLKFKYPALNVTMPNNEKFDKLYIWGVHHPVTDNDQIFLYAQASGRITVSTKRSQQTVIPNIGSRPRIRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQT"
+        self.assertEqual("WI05", ere.cluster_from_ha_2(seq))
+
+
+class TestCluster(unittest.TestCase):
     def test_hk68_year(self):
         self.assertEqual(1968, ere.Cluster("HK68").year)
 
@@ -143,6 +159,35 @@ class TestCluster(unittest.TestCase):
         kr = ere.Cluster("HK14").key_residues
         self.assertEqual(1, len(kr))
         self.assertEqual("Y", kr[159])
+
+
+class TestHammingToCluster(unittest.TestCase):
+    def setUp(self):
+        self.seq = "QDLPGNDNSTATLCLGHHAVPNGTLVKTITDDQIEVTNATELVQSSSTGKICNNPHRILDGINCTLIDALLGDPHCDVFQDETWDLFVERSKAFSNCYPYDVPDYASLRSLVASSGTLEFITEGFTWTGVTQNGGSNACKRGPGSGFFSRLNWLTKSGSTYPVLNVTMPNNDNFDKLYIWGVHHPSTNQEQTSLYVQASGRVTVSTRRSQQTIIPNIGSRPWVRGLSSRISIYWTIVKPGDVLVINSNGNLIAPRGYFKMRTGKSSIMRSDAPIDTCISECITPNGSIPNDKPFQNVNKITYGACPKYVKQNTLKLATGMRNVPEKQT"
+
+    def test_exact_match(self):
+        self.assertEqual(0, ere.hamming_to_cluster(self.seq, "HK68"))
+
+    def test_raises_error_with_len_mismatch(self):
+        with self.assertRaises(ValueError):
+            ere.hamming_to_cluster("ABCD", "HK68")
+
+
+class TestHammingToAllClusters(unittest.TestCase):
+    def setUp(self):
+        self.seq = "QDLPGNDNSTATLCLGHHAVPNGTLVKTITDDQIEVTNATELVQSSSTGKICNNPHRILDGINCTLIDALLGDPHCDVFQDETWDLFVERSKAFSNCYPYDVPDYASLRSLVASSGTLEFITEGFTWTGVTQNGGSNACKRGPGSGFFSRLNWLTKSGSTYPVLNVTMPNNDNFDKLYIWGVHHPSTNQEQTSLYVQASGRVTVSTRRSQQTIIPNIGSRPWVRGLSSRISIYWTIVKPGDVLVINSNGNLIAPRGYFKMRTGKSSIMRSDAPIDTCISECITPNGSIPNDKPFQNVNKITYGACPKYVKQNTLKLATGMRNVPEKQT"
+
+    def test_len_of_return_value(self):
+        """Return value should be length 16 -- the number of clusters."""
+        rv = ere.hamming_to_all_clusters(self.seq)
+        self.assertEqual(16, len(rv))
+
+    def test_returns_list(self):
+        self.assertIsInstance(ere.hamming_to_all_clusters(self.seq), list)
+
+    def test_hk68_hd_0(self):
+        rv = ere.hamming_to_all_clusters(self.seq)
+        self.assertEqual(0, dict(rv)["HK68"])
 
 
 if __name__ == "__main__":

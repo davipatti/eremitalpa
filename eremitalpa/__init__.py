@@ -9,7 +9,7 @@ from .eremitalpa import (compare_trees, compute_tree_layout, deepest_leaf,
 from .influenza import (Cluster, _cluster_motifs, cluster_colors,
                         cluster_from_ha, cluster_from_ha_2)
 
-__version__ = "1.1.2"
+__version__ = "1.1.3"
 
 __all__ = [
     "__version__",
