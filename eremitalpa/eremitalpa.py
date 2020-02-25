@@ -3,7 +3,7 @@ Drawing phylogenetic trees (dendropy.Tree instances) using matplotlib.
 """
 
 from operator import attrgetter
-
+import warnings
 import dendropy as dp
 import matplotlib
 import matplotlib.pyplot as plt
@@ -13,18 +13,15 @@ from matplotlib.collections import LineCollection
 # Defaults
 default_edge_kws = dict(
     color="black",
-    linewidth=0.5
-)
+    linewidth=0.5)
 default_leaf_kws = dict(
     color="black",
-    s=1
-)
+    s=1)
 default_internal_kws = dict()
 default_label_kws = dict(
     horizontalalignment="left",
     verticalalignment="center",
-    fontsize=8
-)
+    fontsize=8)
 
 
 def compute_tree_layout(tree, has_brlens=True):
@@ -226,16 +223,17 @@ def taxon_in_node_label(label, node):
         return False
 
 
-def trunk(tree):
+def get_trunk(tree, attr="_x"):
     """Ordered nodes in tree, from deepest leaf to root.
 
     Args:
         tree (dendropy Tree)
+        attr (str)
 
     Returns:
         tuple containin dendropy Nodes
     """
-    node = deepest_leaf(tree)
+    node = deepest_leaf(tree, attr)
     trunk = []
     while hasattr(node, "parent_node"):
         trunk.append(node)
@@ -243,21 +241,22 @@ def trunk(tree):
     return tuple(trunk)
 
 
-def deepest_leaf(tree):
+def deepest_leaf(tree, attr="_x"):
     """Find the deepest leaf node in the tree.
 
     Args:
         tree (dendropy Tree)
+        attr (str): Either _x or _y. Gets node with max attribute.
 
     Returns:
         dendropy Node
     """
     try:
-        return max(tree.leaf_node_iter(), key=attrgetter("_x"))
+        return max(tree.leaf_node_iter(), key=attrgetter(attr))
 
     except AttributeError:
         tree = compute_tree_layout(tree)
-        return max(tree.leaf_node_iter(), key=attrgetter("_x"))
+        return max(tree.leaf_node_iter(), key=attrgetter(attr))
 
 
 def read_raxml_ancestral_sequences(tree, node_labelled_tree, ancestral_seqs,
@@ -306,8 +305,13 @@ def read_raxml_ancestral_sequences(tree, node_labelled_tree, ancestral_seqs,
 
     internal_sequences = {}
     with open(ancestral_seqs, "r") as handle:
-        for line in handle.readlines():
-            key, sequence = line.strip().split()
+        for i, line in enumerate(handle.readlines()):
+            try:
+                key, sequence = line.strip().split()
+            except ValueError as err:
+                print(f"Problem reading sequence on line {i + 1} in "
+                      f"{ancestral_seqs}.")
+                raise err
             internal_sequences[key] = sequence
 
     for node in tree.internal_nodes():
@@ -418,3 +422,32 @@ def compare_trees(left, right, gap=0.1, connect_kws=dict(), extend_kws=dict(),
     plt.xlim(0, constant)
 
     return left, right
+
+
+def prune_nodes_with_labels(tree, labels):
+    """Prune nodes from tree that have a taxon label in labels.
+
+    Args:
+        tree (dendropy Tree)
+        labels (iterable containing str)
+
+    Returns:
+        (dendropy Tree)
+    """
+    nodes = []
+    not_found = []
+    for label in labels:
+        node = tree.find_node_with_taxon_label(label)
+        if node is None:
+            not_found.append(node)
+        else:
+            nodes.append(node)
+
+    if not_found and len(nodes) == 0:
+        raise ValueError("No taxa found with any of these labels.")
+    elif not_found:
+        warnings.warn(f"Counldn't find:\n{''.join(not_found)}")
+
+    tree.prune_nodes(nodes)
+    tree.prune_leaves_without_taxa(recursive=True)
+    return tree
