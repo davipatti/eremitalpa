@@ -214,7 +214,7 @@ def cluster_from_ha(sequence, seq_type="long"):
         raise ValueError("Can't classify {}".format(sequence))
 
 
-def cluster_from_ha_2(sequence, strict_len=True):
+def cluster_from_ha_2(sequence, strict_len=True, max_hd=10):
     """Classify an amino acid sequence into an antigenic cluster.
 
     First identify clusters that have matching key residues with the sequence.
@@ -225,6 +225,9 @@ def cluster_from_ha_2(sequence, strict_len=True):
     Args:
         sequence (str)
         strict_len (bool): See hamming_to_cluster.
+        hd (int): Queries that have matching key residues to a cluster are not
+            classified as a cluster if the hamming distance to the cluster
+            consensus is > hd.
 
     Returns:
         Cluster
@@ -235,7 +238,6 @@ def cluster_from_ha_2(sequence, strict_len=True):
         raise NoMatchingKeyResidues(sequence)
 
     elif len(candidates) > 1:
-
         cluster, hd = min(hamming_to_clusters(sequence, candidates, strict_len),
                           key=itemgetter(1))
 
@@ -243,12 +245,13 @@ def cluster_from_ha_2(sequence, strict_len=True):
         cluster = candidates[0]
         hd = hamming_to_cluster(sequence, cluster, strict_len)
 
-    if hd <= 10:
+    if hd <= max_hd:
         return cluster
+
     else:
         raise ValueError(
             f"{sequence}\nmatches key residues with {cluster} "
-            f"but hamming distance is >10 ({hd})")
+            f"but hamming distance is >{max_hd} ({hd})")
 
 
 def clusters_with_matching_key_residues(sequence, ignore="-X"):
