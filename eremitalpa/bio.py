@@ -260,7 +260,7 @@ def grouped_sample(population, n, key=None):
     """
     sample = []
     population = sorted(population, key=key)
-    for k, group in groupby(population, key=key):
+    for _, group in groupby(population, key=key):
         group = list(group)
         if len(group) <= n:
             sample += group

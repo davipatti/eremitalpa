@@ -172,6 +172,13 @@ class TestGroupedSample(unittest.TestCase):
 
         self.assertEqual(a, b)
 
+    def test_parity(self):
+        """
+        Test case sampling at most 2 odd or even numbers.
+        """
+        gs = ere.grouped_sample(range(10), n=2, key=lambda x: x % 2)
+        self.assertEqual(4, len(gs))
+
 
 if __name__ == "__main__":
     unittest.main()
