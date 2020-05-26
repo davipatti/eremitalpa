@@ -1,4 +1,5 @@
-from itertools import combinations
+import random
+from itertools import combinations, groupby
 
 amino_acid_colors = {
     "A": "#F76A05",
@@ -244,3 +245,25 @@ def pairwise_hamming_dists(collection, ignore="-X", per_site=False):
     """
     return [hamming_dist(a, b, ignore=ignore, per_site=per_site)
             for a, b in combinations(collection, 2)]
+
+
+def grouped_sample(population, n, key=None):
+    """Randomly sample a population taking at most n elements from each group.
+
+    Args:
+        population (iterable)
+        n (int): Take at most n samples from each group.
+        key (callable): Function by which to group elements. Default (None).
+
+    Returns:
+        list
+    """
+    sample = []
+    population = sorted(population, key=key)
+    for k, group in groupby(population, key=key):
+        group = list(group)
+        if len(group) <= n:
+            sample += group
+        else:
+            sample += random.sample(group, n)
+    return sample
