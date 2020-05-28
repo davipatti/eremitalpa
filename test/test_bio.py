@@ -63,40 +63,85 @@ class TestMutation(unittest.TestCase):
 
 class TestHammingDistance(unittest.TestCase):
     def test_empty_str(self):
+        """
+        Two empty strings have a HD of 0.
+        """
         self.assertEqual(0, ere.hamming_dist("", ""))
 
+    def test_passed_tuple(self):
+        """
+        Should handle passing an iterable that isn't a string.
+        """
+        ere.hamming_dist(tuple("abcd"), tuple("abcd"))
+
     def test_1_mismatch(self):
+        """
+        Simple test case of HD == 1.
+        """
         self.assertEqual(1, ere.hamming_dist("A", "B"))
 
     def test_case_insensititve(self):
+        """
+        Test the case_sensitive flag.
+        """
         self.assertEqual(0, ere.hamming_dist("A", "a", case_sensitive=False))
 
+    def test_case_sensititve(self):
+        """
+        Test the case_sensitive flag.
+        """
+        self.assertEqual(1, ere.hamming_dist("A", "a", case_sensitive=True))
+
     def test_ignore_X(self):
+        """
+        X should be ignored by default.
+        """
         self.assertEqual(0, ere.hamming_dist("A", "X"))
 
     def test_ignore_gap(self):
+        """
+        Gaps (-) should be ignored by default.
+        """
         self.assertEqual(0, ere.hamming_dist("-", "A"))
 
     def test_ignore_argument(self):
+        """
+        Specify custom ignore characters.
+        """
         self.assertEqual(0, ere.hamming_dist("A", "B", ignore="A"))
 
     def test_len_mismatch_raises_valueerror(self):
+        """
+        Should not be able to pass arguments of different length.
+        """
         with self.assertRaises(ValueError):
             ere.hamming_dist("A", "AB")
 
     def test_longer(self):
+        """
+        More complex test case.
+        """
         self.assertEqual(
             1,
             ere.hamming_dist("D-VIDPATTINSON", "NAVIDPaTTIXSON", case_sensitive=False),
         )
 
     def test_per_site_single(self):
+        """
+        Test per site flag with 100% mismatch.
+        """
         self.assertEqual(1, ere.hamming_dist("A", "B", per_site=True))
 
     def test_per_site_double(self):
+        """
+        Test per site flag with 50% mismatch.
+        """
         self.assertEqual(0.5, ere.hamming_dist("AB", "AA", per_site=True))
 
     def test_per_site_longer(self):
+        """
+        Test per site flag with longer test case.
+        """
         self.assertEqual(
             1 / 12,
             ere.hamming_dist(
@@ -105,6 +150,9 @@ class TestHammingDistance(unittest.TestCase):
         )
 
     def test_per_site_zero(self):
+        """
+        Test per site flat with 0 mismatches.
+        """
         self.assertEqual(0, ere.hamming_dist("A", "A", per_site=True))
 
 
@@ -162,7 +210,8 @@ class TestGroupedSample(unittest.TestCase):
         """
         items = [
             (random.choice(ascii_lowercase), random.choice(range(10)))
-            for _ in range(100)]
+            for _ in range(100)
+        ]
 
         random.seed(1234)
         a = ere.grouped_sample(items, n=2, key=itemgetter(1))
