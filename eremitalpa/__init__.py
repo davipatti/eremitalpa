@@ -6,6 +6,7 @@ from .bio import (
     filter_similar_hd,
     grouped_sample,
     hamming_dist,
+    hamming_dist_lt,
     Mutation,
     pairwise_hamming_dists,
     sloppy_translate,

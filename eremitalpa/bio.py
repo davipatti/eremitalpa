@@ -236,6 +236,30 @@ def hamming_dist(a, b, ignore="-X", case_sensitive=True, per_site=False):
         return float(d)
 
 
+def hamming_dist_lt(a, b, n, ignore=None):
+    """
+    Test if hamming distance between a and b is less than n. This is case
+    sensitive and does not check a and b have matching lengths.
+
+    Args:
+        a (iterable)
+        b (iterable)
+        n (scalar)
+        ignore (set or None)
+
+    Returns:
+        bool
+    """
+    ignore = set() if ignore is None else ignore
+    hd = 0
+    for u, v in zip(a, b):
+        if (u != v) and (u not in ignore) and (v not in ignore):
+            hd += 1
+            if hd >= n:
+                return False
+    return True
+
+
 def pairwise_hamming_dists(collection, ignore="-X", per_site=False):
     """Compute all pairwise hamming distances between items in collection.
 
@@ -271,7 +295,7 @@ def grouped_sample(population, n, key=None):
     return sample
 
 
-def filter_similar_hd(sequences, n, progress_bar=False, **kws):
+def filter_similar_hd(sequences, n, progress_bar=False, ignore=None):
     """
     Iterate through sequences excluding those that have a hamming distance of
     less than n to a sequence already seen. Return the non-excluded sequences.
@@ -279,7 +303,7 @@ def filter_similar_hd(sequences, n, progress_bar=False, **kws):
     Args:
         sequences (iterable of str / Bio.SeqRecord)
         progress_bar (bool)
-        **kws passed to hamming_dist
+        ignore (set or None)
 
     Returns:
         list
@@ -289,7 +313,7 @@ def filter_similar_hd(sequences, n, progress_bar=False, **kws):
     sequences = tqdm(tuple(sequences)) if progress_bar else sequences
     for sequence in sequences:
         for included in subset:
-            if hamming_dist(sequence, included, **kws) < n:
+            if hamming_dist_lt(sequence, included, n, ignore=ignore):
                 break
         else:
             append(sequence)

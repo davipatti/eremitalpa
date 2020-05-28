@@ -289,5 +289,38 @@ class TestFilterSimilarHD(unittest.TestCase):
         self.assertEqual(1, len(result))
 
 
+class TestHammingDistanceLt(unittest.TestCase):
+    def test_returns_bool(self):
+        """
+        Should return a boolean.
+        """
+        self.assertIsInstance(ere.hamming_dist_lt("a", "b", 1), bool)
+
+    def test_case_a(self):
+        """
+        Strings that differ by 1 have a hamming distance less than 2.
+        """
+        self.assertTrue(ere.hamming_dist_lt("a", "b", 2))
+
+    def test_case_b(self):
+        """
+        Identical strings have a hamming distance less than 1.
+        """
+        result = ere.hamming_dist_lt("DavidPattinson", "DavidPattinson", 1)
+        self.assertTrue(result)
+
+    def test_ignore_argument(self):
+        """
+        Ignored characters shouldn't contribute to HD.
+        """
+        self.assertTrue(ere.hamming_dist_lt("abfgh", "abcde", 1, ignore="fgh"))
+
+    def test_case_sensititve(self):
+        """
+        Test the function is case sensitive.
+        """
+        self.assertFalse(ere.hamming_dist_lt("abc", "ABC", 1))
+
+
 if __name__ == "__main__":
     unittest.main()
