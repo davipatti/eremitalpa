@@ -1,3 +1,4 @@
+from tqdm import tqdm
 import random
 from itertools import combinations, groupby
 
@@ -215,6 +216,7 @@ def hamming_dist(a, b, ignore="-X", case_sensitive=True, per_site=False):
         a = a.upper()
         b = b.upper()
         ignore = ignore.upper()
+    ignore = set(ignore)
     d = 0
     if per_site:
         l = 0
@@ -267,3 +269,28 @@ def grouped_sample(population, n, key=None):
         else:
             sample += random.sample(group, n)
     return sample
+
+
+def filter_similar_hd(sequences, n, progress_bar=False, **kws):
+    """
+    Iterate through sequences excluding those that have a hamming distance of
+    less than n to a sequence already seen. Return the non-excluded sequences.
+
+    Args:
+        sequences (iterable of str / Bio.SeqRecord)
+        progress_bar (bool)
+        **kws passed to hamming_dist
+
+    Returns:
+        list
+    """
+    subset = []
+    append = subset.append
+    sequences = tqdm(tuple(sequences)) if progress_bar else sequences
+    for sequence in sequences:
+        for included in subset:
+            if hamming_dist(sequence, included, **kws) < n:
+                break
+        else:
+            append(sequence)
+    return subset

@@ -3,6 +3,7 @@ from __future__ import absolute_import as _
 from .bio import (
     amino_acid_colors,
     find_mutations,
+    filter_similar_hd,
     grouped_sample,
     hamming_dist,
     Mutation,

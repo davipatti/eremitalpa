@@ -6,6 +6,7 @@ import random
 import eremitalpa as ere
 from operator import itemgetter
 from string import ascii_lowercase
+from Bio.Seq import Seq
 
 
 class TestSloppyTranslate(unittest.TestCase):
@@ -227,6 +228,65 @@ class TestGroupedSample(unittest.TestCase):
         """
         gs = ere.grouped_sample(range(10), n=2, key=lambda x: x % 2)
         self.assertEqual(4, len(gs))
+
+
+class TestFilterSimilarHD(unittest.TestCase):
+    def test_returns_list(self):
+        """
+        Should return a list.
+        """
+        sequences = "abc", "abc"
+        result = ere.filter_similar_hd(sequences, 1)
+        self.assertIsInstance(result, list)
+
+    def test_n_zero(self):
+        """
+        n == 0 should mean that multiple identical sequences are returned.
+        """
+        sequences = "abc", "abc"
+        result = ere.filter_similar_hd(sequences, 0)
+        self.assertEqual(["abc", "abc"], result)
+
+    def test_n_one(self):
+        """
+        n == 1 should mean that only a single copy of groups of identical
+        sequences are returned.
+        """
+        sequences = "abc", "abc", "abc"
+        result = ere.filter_similar_hd(sequences, 1)
+        self.assertEqual(["abc"], result)
+
+    def test_n_two(self):
+        """
+        n == 2 should mean that sequences with one mismatch to something already
+        seen are not returned. Sequences with 2 or more mismatches should be
+        returned.
+        """
+        sequences = (
+            "abc",
+            "abd",  # HD < 2 to 'abc' --> should not be returned
+            "ade",  # HD ! <2 to 'abc' --> should be returned
+        )
+        result = ere.filter_similar_hd(sequences, 2)
+        self.assertEqual(["abc", "ade"], result)
+
+    def test_hamming_dist_kws_are_passed(self):
+        """
+        Test ignore keyword.
+        """
+        sequences = "abc", "ade"
+        result = ere.filter_similar_hd(sequences, 1, ignore="D", case_sensitive=False)
+        # 'd' is ignored so these sequences have an HD of 1
+        # therefore both seqs should be returned.
+        self.assertEqual(["abc", "ade"], result)
+
+    def test_biopython_seq_records(self):
+        """
+        Test using Bio.Seq.Seq.
+        """
+        sequences = Seq("ACTG"), Seq("ACTT")
+        result = ere.filter_similar_hd(sequences, 2)
+        self.assertEqual(1, len(result))
 
 
 if __name__ == "__main__":
