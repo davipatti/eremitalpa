@@ -11,47 +11,46 @@ Influenza related data.
 """
 
 b7 = 145, 155, 156, 158, 159, 189, 193
-clusters = ("BE89", "BE92", "BK79", "CA04", "EN72", "FU02", "HK14", "HK68",
-            "PE09", "SI87", "SW13", "SY97", "TX77", "VI75", "WI05", "WU95")
+clusters = (
+    "BE89",
+    "BE92",
+    "BK79",
+    "CA04",
+    "EN72",
+    "FU02",
+    "HK14",
+    "HK68",
+    "PE09",
+    "SI87",
+    "SW13",
+    "SY97",
+    "TX77",
+    "VI75",
+    "WI05",
+    "WU95",
+)
 
 """
 Map cluster -> motifs
 """
 _cluster_motifs = {
-    "HK68": (
-        "STKGSQS",
-    ),
+    "HK68": ("STKGSQS",),
     "EN72": (
         "SYKGSQS",
         "SYKGNQS",
         "SYKGSQN",
     ),
-    "VI75": (
-        "NYKGSKD",
-    ),
-    "TX77": (
-        "NYKESKN",
-    ),
+    "VI75": ("NYKGSKD",),
+    "TX77": ("NYKESKN",),
     "BK79": (
         "NYEESKN",
         "NYEEYKN",
     ),
-    "SI87": (
-        "NHEEYRN",
-    ),
-    "BE89": (
-        "KHEDYRS",
-        "KHEEYRS"
-    ),
-    "BE92": (
-        "NHKEYSS",
-    ),
-    "WU95": (
-        "KHKEYSS",
-    ),
-    "SY97": (
-        "KHQKYSS",
-    ),
+    "SI87": ("NHEEYRN",),
+    "BE89": ("KHEDYRS", "KHEEYRS"),
+    "BE92": ("NHKEYSS",),
+    "WU95": ("KHKEYSS",),
+    "SY97": ("KHQKYSS",),
     "FU02": (
         "KTHKYSS",
         "KTHKFNS",
@@ -61,19 +60,13 @@ _cluster_motifs = {
         "NTHKFNS",
         "STHKFNS",
     ),
-    "WI05": (
-        "NTHKFNF",
-    ),
+    "WI05": ("NTHKFNF",),
     "PE09": (
         "NTHNFKF",
         "STHNFKF",
     ),
-    "SW13": (
-        "STHNSKF",
-    ),
-    "HK14": (
-        "STHNYKF",
-    ),
+    "SW13": ("STHNSKF",),
+    "HK14": ("STHNYKF",),
 }
 
 """
@@ -81,9 +74,7 @@ Dict of dicts. For each cluster, map site -> amino acid, for all sites in
 cluster transitions in and out.
 """
 _cluster_key_residues = {
-    "HK68": {
-        155: "T"
-    },
+    "HK68": {155: "T"},
     "EN72": {
         155: "Y",
         189: "Q",
@@ -140,17 +131,9 @@ _cluster_key_residues = {
         158: "K",
         189: "N",
     },
-    "PE09": {
-        158: "N",
-        189: "K",
-        159: "F"
-    },
-    "SW13": {
-        159: "S"
-    },
-    "HK14": {
-        159: "Y"
-    },
+    "PE09": {158: "N", 189: "K", 159: "F"},
+    "SW13": {159: "S"},
+    "HK14": {159: "Y"},
 }
 
 
@@ -238,8 +221,9 @@ def cluster_from_ha_2(sequence, strict_len=True, max_hd=10):
         raise NoMatchingKeyResidues(sequence)
 
     elif len(candidates) > 1:
-        cluster, hd = min(hamming_to_clusters(sequence, candidates, strict_len),
-                          key=itemgetter(1))
+        cluster, hd = min(
+            hamming_to_clusters(sequence, candidates, strict_len), key=itemgetter(1)
+        )
 
     else:  # len(candidates) == 1
         cluster = candidates[0]
@@ -251,7 +235,8 @@ def cluster_from_ha_2(sequence, strict_len=True, max_hd=10):
     else:
         raise ValueError(
             f"{sequence}\nmatches key residues with {cluster} "
-            f"but hamming distance is >{max_hd} ({hd})")
+            f"but hamming distance is >{max_hd} ({hd})"
+        )
 
 
 def clusters_with_matching_key_residues(sequence, ignore="-X"):
@@ -322,12 +307,16 @@ def hamming_to_cluster(sequence, cluster, strict_len=True):
     """
     if not strict_len:
         sequence = sequence[:328]
-    return hamming_dist(sequence, Cluster(cluster).sequence, ignore="-X",
-                        case_sensitive=False, per_site=False)
+    return hamming_dist(
+        sequence,
+        Cluster(cluster).sequence,
+        ignore="-X",
+        case_sensitive=False,
+        per_site=False,
+    )
 
 
-class Cluster():
-
+class Cluster:
     def __init__(self, cluster):
         self._name = str(cluster)
 
@@ -399,9 +388,15 @@ class NoMatchingKeyResidues(Exception):
     pass
 
 
-def plot_tree_coloured_by_cluster(tree, legend=True, leg_kws=dict(),
-                                  unknown_color="black", leaf_kws=dict(),
-                                  internal_kws=dict(), **kws):
+def plot_tree_coloured_by_cluster(
+    tree,
+    legend=True,
+    leg_kws=dict(),
+    unknown_color="black",
+    leaf_kws=dict(),
+    internal_kws=dict(),
+    **kws,
+):
     """Plot a tree with nodes coloured according to cluster.
 
     Args:
@@ -412,30 +407,46 @@ def plot_tree_coloured_by_cluster(tree, legend=True, leg_kws=dict(),
         unknown_color (mpl color): Color if cluster is not known.
         **kws: Keyword arguments passed to plot_tree.
     """
-    leaf_color = [cluster_colors[l.cluster]
-                  if hasattr(l, "cluster") and l.cluster in cluster_colors
-                  else unknown_color
-                  for l in tree.leaf_node_iter()]
-    internal_color = [cluster_colors[n.cluster]
-                      if hasattr(n, "cluster") and n.cluster in cluster_colors
-                      else unknown_color
-                      for n in tree.internal_nodes()]
+    leaf_color = [
+        cluster_colors[l.cluster]
+        if hasattr(l, "cluster") and l.cluster in cluster_colors
+        else unknown_color
+        for l in tree.leaf_node_iter()
+    ]
+    internal_color = [
+        cluster_colors[n.cluster]
+        if hasattr(n, "cluster") and n.cluster in cluster_colors
+        else unknown_color
+        for n in tree.internal_nodes()
+    ]
 
-    leaf_kws = {**dict(color=leaf_color, zorder=10, s=5,
-                       linewidth=0.2, edgecolor="white"), **leaf_kws, }
+    leaf_kws = {
+        **dict(color=leaf_color, zorder=10, s=5, linewidth=0.2, edgecolor="white"),
+        **leaf_kws,
+    }
 
-    internal_kws = {**dict(color=internal_color, s=5, zorder=5,
-                           linewidth=0.2, edgecolor="white"), **internal_kws, }
+    internal_kws = {
+        **dict(color=internal_color, s=5, zorder=5, linewidth=0.2, edgecolor="white"),
+        **internal_kws,
+    }
 
-    plot_tree(tree, leaf_kws=leaf_kws, internal_kws=internal_kws,
-              ax=plt.gca(), compute_layout=True, **kws)
+    plot_tree(
+        tree,
+        leaf_kws=leaf_kws,
+        internal_kws=internal_kws,
+        ax=plt.gca(),
+        compute_layout=True,
+        **kws,
+    )
 
     if legend:
         # Find clusters in this tree
-        leaf_clusters = set(l.cluster if hasattr(l, "cluster") else None
-                            for l in tree.leaf_node_iter())
-        internal_clusters = set(n.cluster if hasattr(n, "cluster") else None
-                                for n in tree.internal_nodes())
+        leaf_clusters = set(
+            l.cluster if hasattr(l, "cluster") else None for l in tree.leaf_node_iter()
+        )
+        internal_clusters = set(
+            n.cluster if hasattr(n, "cluster") else None for n in tree.internal_nodes()
+        )
         all_clusters = leaf_clusters.union(internal_clusters)
 
         # Remove anything not a known cluster
@@ -476,18 +487,26 @@ def guess_clusters_in_tree(node):
         return
 
     else:
-        descendents = list(
-            node.postorder_internal_node_iter()) + node.leaf_nodes()
+        descendents = list(node.postorder_internal_node_iter()) + node.leaf_nodes()
         for d in descendents:
             if d.cluster is None:
                 d.cluster = node.cluster
 
 
-def plot_subs_on_tree(tree, seq_attr, cluster_change_only=None, length=30,
-                      exclude_leaves=True, find_mutation_offset=0,
-                      max_mutations=20, only_these_positions=None,
-                      exclude_characters="X", either_side_trunk=True,
-                      trunk_attr="_x", **kws):
+def plot_subs_on_tree(
+    tree,
+    seq_attr,
+    cluster_change_only=None,
+    length=30,
+    exclude_leaves=True,
+    find_mutation_offset=0,
+    max_mutations=20,
+    only_these_positions=None,
+    exclude_characters="X",
+    either_side_trunk=True,
+    trunk_attr="_x",
+    **kws,
+):
     """Annotate a tree with substitutions.
 
     Args:
@@ -513,7 +532,7 @@ def plot_subs_on_tree(tree, seq_attr, cluster_change_only=None, length=30,
     """
     trunk = get_trunk(tree, trunk_attr)
 
-    length = (length ** 2 / 2) ** 0.5
+    length = (length**2 / 2) ** 0.5
 
     for node in tree.internal_nodes():
 
@@ -536,15 +555,16 @@ def plot_subs_on_tree(tree, seq_attr, cluster_change_only=None, length=30,
 
             # Apply filters to mutations
             if only_these_positions:
-                mutations = filter(
-                    lambda m: m.pos in only_these_positions, mutations)
+                mutations = filter(lambda m: m.pos in only_these_positions, mutations)
 
             if exclude_characters:
+
                 def has_filtered(mutation):
                     for aa in mutation.a, mutation.b:
                         if aa in exclude_characters:
                             return True
                     return False
+
                 mutations = filter(lambda m: not has_filtered(m), mutations)
 
             mutations = sorted(mutations)
@@ -569,8 +589,19 @@ def plot_subs_on_tree(tree, seq_attr, cluster_change_only=None, length=30,
             xy = (node._x + parent._x) / 2, node._y
 
             plt.annotate(
-                label, xy, xytext=xytext,
-                va=va, ha=ha, textcoords="offset pixels",
-                arrowprops=dict(facecolor='darkgrey', shrink=0, linewidth=0,
-                                width=0.3, headwidth=2, headlength=2),
-                **kws)
+                label,
+                xy,
+                xytext=xytext,
+                va=va,
+                ha=ha,
+                textcoords="offset pixels",
+                arrowprops=dict(
+                    facecolor="darkgrey",
+                    shrink=0,
+                    linewidth=0,
+                    width=0.3,
+                    headwidth=2,
+                    headlength=2,
+                ),
+                **kws,
+            )

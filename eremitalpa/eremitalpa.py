@@ -11,17 +11,12 @@ from Bio import SeqIO
 from matplotlib.collections import LineCollection
 
 # Defaults
-default_edge_kws = dict(
-    color="black",
-    linewidth=0.5)
-default_leaf_kws = dict(
-    color="black",
-    s=1)
+default_edge_kws = dict(color="black", linewidth=0.5)
+default_leaf_kws = dict(color="black", s=1)
 default_internal_kws = dict()
 default_label_kws = dict(
-    horizontalalignment="left",
-    verticalalignment="center",
-    fontsize=8)
+    horizontalalignment="left", verticalalignment="center", fontsize=8
+)
 
 
 def compute_tree_layout(tree, has_brlens=True):
@@ -69,9 +64,17 @@ def compute_tree_layout(tree, has_brlens=True):
     return tree
 
 
-def plot_tree(tree, has_brlens=True, edge_kws=default_edge_kws,
-              leaf_kws=default_leaf_kws, internal_kws=default_internal_kws, ax=None, labels=(), label_kws=default_label_kws,
-              compute_layout=True):
+def plot_tree(
+    tree,
+    has_brlens=True,
+    edge_kws=default_edge_kws,
+    leaf_kws=default_leaf_kws,
+    internal_kws=default_internal_kws,
+    ax=None,
+    labels=(),
+    label_kws=default_label_kws,
+    compute_layout=True,
+):
     """Plot a dendropy tree object.
 
     Tree nodes are plotted in their current order. So, to ladderize, call
@@ -136,19 +139,21 @@ def plot_tree(tree, has_brlens=True, edge_kws=default_edge_kws,
     ax.scatter(
         tuple(node._x for node in tree.leaf_node_iter()),
         tuple(node._y for node in tree.leaf_node_iter()),
-        **leaf_kws)
+        **leaf_kws,
+    )
 
     # Draw internal nodes
     if internal_kws:
         ax.scatter(
             tuple(node._x for node in tree.internal_nodes()),
             tuple(node._y for node in tree.internal_nodes()),
-            **internal_kws)
+            **internal_kws,
+        )
 
     # Labels
     # Test if labels is an iterable.
-        # If it is, label nodes contained in iterable.
-        # If it isn't, but is truthy, label all leaf nodes.
+    # If it is, label nodes contained in iterable.
+    # If it isn't, but is truthy, label all leaf nodes.
     try:
         iter(labels)
     except TypeError:
@@ -195,16 +200,17 @@ def plot_leaves_with_labels(tree, labels, ax=None, **kws):
         x = [node._x for node in nodes]
     except AttributeError as err:
         print("Node(s) do not have _x attribute. Run compute_tree_layout.")
-        raise(err)
+        raise (err)
 
     try:
         y = [node._y for node in nodes]
     except AttributeError as err:
         print("Node(s) do not have _y attribute. Run compute_tree_layout.")
-        raise(err)
+        raise (err)
 
-    ax.scatter(x, y, s=s, c=c, zorder=zorder,
-               linewidth=linewidth, edgecolor=edgecolor, **kws)
+    ax.scatter(
+        x, y, s=s, c=c, zorder=zorder, linewidth=linewidth, edgecolor=edgecolor, **kws
+    )
 
 
 def taxon_in_node_labels(labels, node):
@@ -259,8 +265,9 @@ def deepest_leaf(tree, attr="_x"):
         return max(tree.leaf_node_iter(), key=attrgetter(attr))
 
 
-def read_raxml_ancestral_sequences(tree, node_labelled_tree, ancestral_seqs,
-                                   leaf_seqs=None):
+def read_raxml_ancestral_sequences(
+    tree, node_labelled_tree, ancestral_seqs, leaf_seqs=None
+):
     """Read a tree and ancestral sequences estimated by RAxML.
 
     RAxML can estimate marginal ancestral sequences for internal nodes on a
@@ -296,12 +303,14 @@ def read_raxml_ancestral_sequences(tree, node_labelled_tree, ancestral_seqs,
             attached as 'sequence' attributes on Nodes.
     """
     tree = dp.Tree.get(path=tree, schema="newick", preserve_underscores=True)
-    labelled_tree = dp.Tree.get(path=node_labelled_tree, schema="newick",
-                                preserve_underscores=True)
+    labelled_tree = dp.Tree.get(
+        path=node_labelled_tree, schema="newick", preserve_underscores=True
+    )
 
     # Dict mapping leaf labels -> node label
-    leaves_to_labelled_node = {sorted_leaf_labels(node): node.label
-                               for node in labelled_tree.nodes()}
+    leaves_to_labelled_node = {
+        sorted_leaf_labels(node): node.label for node in labelled_tree.nodes()
+    }
 
     internal_sequences = {}
     with open(ancestral_seqs, "r") as handle:
@@ -309,8 +318,9 @@ def read_raxml_ancestral_sequences(tree, node_labelled_tree, ancestral_seqs,
             try:
                 key, sequence = line.strip().split()
             except ValueError as err:
-                print(f"Problem reading sequence on line {i + 1} in "
-                      f"{ancestral_seqs}.")
+                print(
+                    f"Problem reading sequence on line {i + 1} in " f"{ancestral_seqs}."
+                )
                 raise err
             internal_sequences[key] = sequence
 
@@ -320,7 +330,6 @@ def read_raxml_ancestral_sequences(tree, node_labelled_tree, ancestral_seqs,
         node.sequence = internal_sequences[key]
 
     if leaf_seqs:
-
         leaf_sequences = {}
         with open(leaf_seqs, "r") as handle:
             for r in SeqIO.parse(handle, format="fasta"):
@@ -337,9 +346,18 @@ def sorted_leaf_labels(node):
     return tuple(sorted(leaf.taxon.label for leaf in node.leaf_nodes()))
 
 
-def compare_trees(left, right, gap=0.1, connect_kws=dict(), extend_kws=dict(),
-                  extend_every=10, left_kws=dict(), right_kws=dict(),
-                  connect_colors=dict(), extend_colors=dict()):
+def compare_trees(
+    left,
+    right,
+    gap=0.1,
+    connect_kws=dict(),
+    extend_kws=dict(),
+    extend_every=10,
+    left_kws=dict(),
+    right_kws=dict(),
+    connect_colors=dict(),
+    extend_colors=dict(),
+):
     """Plot two phylogenies side by side, and join the same taxa in each tree.
 
     Args:
@@ -375,12 +393,12 @@ def compare_trees(left, right, gap=0.1, connect_kws=dict(), extend_kws=dict(),
         colors = [] if "colors" not in connect_kws and connect_colors else None
 
         for node in left.leaf_node_iter():
-
             other = right.find_node_with_taxon_label(node.taxon.label)
 
             if other:
                 segments.append(
-                    ((left._xlim[1], node._y), (left._xlim[1] + gap, other._y)))
+                    ((left._xlim[1], node._y), (left._xlim[1] + gap, other._y))
+                )
 
                 if colors is not None:
                     colors.append(connect_colors[node.taxon.label])
@@ -398,15 +416,13 @@ def compare_trees(left, right, gap=0.1, connect_kws=dict(), extend_kws=dict(),
         key = attrgetter("_y")
 
         for node in sorted(left.leaf_node_iter(), key=key)[::extend_every]:
-            segments.append(
-                ((node._x, node._y), (left._xlim[1], node._y)))
+            segments.append(((node._x, node._y), (left._xlim[1], node._y)))
 
             if colors is not None:
                 colors.append(extend_colors[node.taxon.label])
 
         for node in sorted(right.leaf_node_iter(), key=key)[::extend_every]:
-            segments.append(
-                ((left._xlim[1] + gap, node._y), (node._x, node._y)))
+            segments.append(((left._xlim[1] + gap, node._y), (node._x, node._y)))
 
             if colors is not None:
                 colors.append(extend_colors[node.taxon.label])

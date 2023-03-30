@@ -23,7 +23,7 @@ amino_acid_colors = {
     "V": "#00939f",
     "W": "#ED93BD",
     "X": "#777777",  # unknown AA
-    "Y": "#a5b8c7"
+    "Y": "#a5b8c7",
 }
 
 
@@ -149,8 +149,7 @@ def find_mutations(a, b, offset=0):
     )
 
 
-class Mutation():
-
+class Mutation:
     def __init__(self, *args):
         """Change of a character at a site.
 
@@ -167,8 +166,10 @@ class Mutation():
             self.pos = int(args[1])
             self.b = args[-1]
         else:
-            raise ValueError("Pass 1 or 3 arguments. E.g. Mutation('N145K') or "
-                             "Mutation('N', 145, 'K')")
+            raise ValueError(
+                "Pass 1 or 3 arguments. E.g. Mutation('N145K') or "
+                "Mutation('N', 145, 'K')"
+            )
         self._elements = (self.a, self.pos, self.b)
 
     def __repr__(self):
@@ -209,9 +210,9 @@ def hamming_dist(a, b, ignore="-X", case_sensitive=True, per_site=False):
         float
     """
     if len(a) != len(b):
-        raise ValueError(f"Length mismatch ({len(a)} vs. {len(b)}):\n"
-                         f"a: {a}\n"
-                         f"b: {b}")
+        raise ValueError(
+            f"Length mismatch ({len(a)} vs. {len(b)}):\n" f"a: {a}\n" f"b: {b}"
+        )
     if not case_sensitive:
         a = a.upper()
         b = b.upper()
@@ -269,8 +270,10 @@ def pairwise_hamming_dists(collection, ignore="-X", per_site=False):
     Returns:
         list of hamming distances
     """
-    return [hamming_dist(a, b, ignore=ignore, per_site=per_site)
-            for a, b in combinations(collection, 2)]
+    return [
+        hamming_dist(a, b, ignore=ignore, per_site=per_site)
+        for a, b in combinations(collection, 2)
+    ]
 
 
 def grouped_sample(population, n, key=None):

@@ -21,7 +21,12 @@ width = 10
 
 # Plot
 fig, ax = plt.subplots(figsize=(width, height))
-ere.plot_tree(tree, labels=True, label_kws=dict(fontsize=1),
-              leaf_kws=dict(s=0), compute_layout=False)
+ere.plot_tree(
+    tree,
+    labels=True,
+    label_kws=dict(fontsize=1),
+    leaf_kws=dict(s=0),
+    compute_layout=False,
+)
 filename = f"{args.tree}.pdf" if not args.filename else args.filename
 plt.savefig(filename, bbox_inches="tight")
