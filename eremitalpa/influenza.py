@@ -13,30 +13,6 @@ Influenza related data.
 
 b7 = 145, 155, 156, 158, 159, 189, 193
 
-# Temporally sorted clusters
-clusters = (
-    "HK68",
-    "EN72",
-    "VI75",
-    "TX77",
-    "BK79",
-    "SI87",
-    "BE89",
-    "BE92",
-    "WU95",
-    "SY97",
-    "FU02",
-    "CA04",
-    "WI05",
-    "PE09",
-    "SW13",
-    "HK14",
-    "KA17",
-    "SW17",
-    "HK19",
-    "CA20",
-    "DA21",
-)
 
 """
 Map cluster -> motifs
@@ -161,13 +137,13 @@ for cluster, motifs in _cluster_motifs.items():
 """Cluster colours."""
 cluster_colors = {
     "BE89": "#FF0000",  # Red
+    "HK68": "#A208BD",  # Purple
     "BE92": "#F894F8",  # Pink
     "BK79": "#3BBA30",  # Green
     "CA04": "#FC5A03",  # Lemon
     "EN72": "#33CCCC",  # Dark cyan
     "FU02": "#B3C261",  # Green
     "HK14": "#9CA9B5",  # Grey
-    "HK68": "#A208BD",  # Purple
     "PE09": "#F0FC03",  # Orange
     "SI87": "#0000FF",  # Blue
     "SW13": "#B3DE69",  # Green
@@ -176,6 +152,11 @@ cluster_colors = {
     "VI75": "#F9D004",  # Yellow
     "WI05": "#3E809C",  # Blue
     "WU95": "#37802B",  # Dark green
+    "KA17": "#DB073D",  # Hot pink
+    "SW17": "#4c1273",  # Dark purple
+    "HK19": "#806205",  # Middle Brown
+    "CA20": "#ab47bc",  # Pink
+    "DA21": "#07485B",  # Deep turquoise
 }
 
 
@@ -551,6 +532,36 @@ _cluster_sequences = {
         "TYGACPRYVKQSTLKLATGMRNVPEKQT"
     ),
 }
+
+# Temporally sorted clusters
+clusters = tuple(
+    map(
+        Cluster,
+        (
+            "HK68",
+            "EN72",
+            "VI75",
+            "TX77",
+            "BK79",
+            "SI87",
+            "BE89",
+            "BE92",
+            "WU95",
+            "SY97",
+            "FU02",
+            "CA04",
+            "WI05",
+            "PE09",
+            "SW13",
+            "HK14",
+            "KA17",
+            "SW17",
+            "HK19",
+            "CA20",
+            "DA21",
+        ),
+    )
+)
 
 
 class NoMatchingKeyResidues(Exception):

@@ -17,10 +17,16 @@ class TestInfluenzaData(unittest.TestCase):
             len(ere.influenza.clusters), len(ere.influenza._cluster_key_residues)
         )
 
+
+class TestAllClusters(unittest.TestCase):
     def test_cluster_sequences_all_len_328(self):
         for cluster in ere.influenza.clusters:
             with self.subTest(cluster=cluster):
                 self.assertEqual(328, len(ere.Cluster(cluster).sequence))
+
+    def test_all_clusters_have_color(self):
+        for cluster in ere.influenza.clusters:
+            cluster.color
 
 
 class TestClassifyCluster(unittest.TestCase):
