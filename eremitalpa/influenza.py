@@ -11,23 +11,30 @@ Influenza related data.
 """
 
 b7 = 145, 155, 156, 158, 159, 189, 193
+
+# Temporally sorted clusters
 clusters = (
+    "HK68",
+    "EN72",
+    "VI75",
+    "TX77",
+    "BK79",
+    "SI87",
     "BE89",
     "BE92",
-    "BK79",
-    "CA04",
-    "EN72",
-    "FU02",
-    "HK14",
-    "HK68",
-    "PE09",
-    "SI87",
-    "SW13",
-    "SY97",
-    "TX77",
-    "VI75",
-    "WI05",
     "WU95",
+    "SY97",
+    "FU02",
+    "CA04",
+    "WI05",
+    "PE09",
+    "SW13",
+    "HK14",
+    "KA17",
+    "SW17",
+    "HK19",
+    "CA20",
+    "DA21",
 )
 
 """
@@ -132,8 +139,13 @@ _cluster_key_residues = {
         189: "N",
     },
     "PE09": {158: "N", 189: "K", 159: "F"},
-    "SW13": {159: "S"},
-    "HK14": {159: "Y"},
+    "SW13": {159: "S", 193: "F"},
+    "HK14": {159: "Y", 193: "F", 131: "T", 142: {"R", "G"}},
+    "KA17": {193: "S"},
+    "SW17": {142: "R"},
+    "HK19": {135: "K", 193: "S"},
+    "CA20": {131: "K", 142: "G", 193: "S", 159: "Y"},
+    "DA21": {159: "N"},
 }
 
 
@@ -233,7 +245,7 @@ def cluster_from_ha_2(sequence, strict_len=True, max_hd=10):
         return cluster
 
     else:
-        raise ValueError(
+        raise HammingDistTooLargeError(
             f"{sequence}\nmatches key residues with {cluster} "
             f"but hamming distance is >{max_hd} ({hd})"
         )
@@ -388,6 +400,10 @@ class NoMatchingKeyResidues(Exception):
     pass
 
 
+class HammingDistTooLargeError(Exception):
+    pass
+
+
 def plot_tree_coloured_by_cluster(
     tree,
     legend=True,
@@ -535,7 +551,6 @@ def plot_subs_on_tree(
     length = (length**2 / 2) ** 0.5
 
     for node in tree.internal_nodes():
-
         if exclude_leaves and node.is_leaf():
             continue
 
