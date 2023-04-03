@@ -112,9 +112,8 @@ def sloppy_translate(sequence):
     """
     sequence = sequence.upper()
     peptide = ""
-    ii = range(0, len(sequence), 3)
-    jj = range(3, len(sequence) + 3, 3)
-    for i, j in zip(ii, jj):
+    for i in range(0, len(sequence), 3):
+        j = i + 3
         codon = sequence[i:j]
         try:
             peptide += TRANSLATION_TABLE[codon]
