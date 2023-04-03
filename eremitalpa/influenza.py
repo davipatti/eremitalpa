@@ -12,7 +12,29 @@ Influenza related data.
 """
 
 b7 = 145, 155, 156, 158, 159, 189, 193
-
+_clusters = (
+    "HK68",
+    "EN72",
+    "VI75",
+    "TX77",
+    "BK79",
+    "SI87",
+    "BE89",
+    "BE92",
+    "WU95",
+    "SY97",
+    "FU02",
+    "CA04",
+    "WI05",
+    "PE09",
+    "SW13",
+    "HK14",
+    "KA17",
+    "SW17",
+    "HK19",
+    "CA20",
+    "DA21",
+)
 
 """
 Map cluster -> motifs
@@ -59,69 +81,25 @@ cluster transitions in and out.
 """
 _cluster_key_residues = {
     "HK68": {155: "T"},
-    "EN72": {
-        155: "Y",
-        189: "Q",
-    },
-    "VI75": {
-        158: "G",
-        189: "K",
-        193: "D",
-    },
-    "TX77": {
-        156: "K",
-        158: "E",
-        193: "N",
-    },
-    "BK79": {
-        155: "Y",
-        156: "E",
-        159: "S",
-        189: "K",
-    },
-    "SI87": {
-        145: "N",
-        155: "H",
-        156: "E",
-        159: "Y",
-        189: "R",
-    },
-    "BE89": {
-        145: "K",
-    },
-    "BE92": {
-        156: "K",
-        145: "N",
-    },
-    "WU95": {
-        145: "K",
-        156: "K",
-        158: "E",
-    },
-    "SY97": {
-        156: "Q",
-        158: "K",
-    },
-    "FU02": {
-        145: "K",
-        156: "H",
-    },
-    "CA04": {
-        145: "N",
-        193: "S",
-    },
-    "WI05": {
-        193: "F",
-        158: "K",
-        189: "N",
-    },
+    "EN72": {155: "Y", 189: "Q"},
+    "VI75": {158: "G", 189: "K", 193: "D"},
+    "TX77": {156: "K", 158: "E", 193: "N"},
+    "BK79": {155: "Y", 156: "E", 159: "S", 189: "K"},
+    "SI87": {145: "N", 155: "H", 156: "E", 159: "Y", 189: "R"},
+    "BE89": {145: "K"},
+    "BE92": {156: "K", 145: "N"},
+    "WU95": {145: "K", 156: "K", 158: "E"},
+    "SY97": {156: "Q", 158: "K"},
+    "FU02": {145: "K", 156: "H"},
+    "CA04": {145: "N", 193: "S"},
+    "WI05": {193: "F", 158: "K", 189: "N"},
     "PE09": {158: "N", 189: "K", 159: "F"},
     "SW13": {159: "S", 193: "F"},
-    "HK14": {159: "Y", 193: "F", 131: "T", 142: {"R", "G"}},
+    "HK14": {142: {"R", "G"}, 159: "Y", 193: "F"},
     "KA17": {193: "S"},
-    "SW17": {142: "R"},
+    "SW17": {142: "K"},
     "HK19": {135: "K", 193: "S"},
-    "CA20": {131: "K", 142: "G", 193: "S", 159: "Y"},
+    "CA20": {159: "Y", 193: "S"},
     "DA21": {159: "N"},
 }
 
@@ -191,8 +169,9 @@ def cluster_from_ha(sequence, seq_type="long"):
         raise ValueError("Can't classify {}".format(sequence))
 
 
-def cluster_from_ha_2(sequence, strict_len=True, max_hd=10):
-    """Classify an amino acid sequence into an antigenic cluster.
+def cluster_from_ha_2(sequence: str, strict_len: bool = True, max_hd: float = 10):
+    """
+    Classify an amino acid sequence into an antigenic cluster.
 
     First identify clusters that have matching key residues with the sequence.
     If multiple clusters are found, find the one with the lowest hamming
@@ -233,8 +212,11 @@ def cluster_from_ha_2(sequence, strict_len=True, max_hd=10):
         )
 
 
-def clusters_with_matching_key_residues(sequence, ignore="-X"):
-    """H3N2 clusters that have matching cluster transition substitution key
+def clusters_with_matching_key_residues(
+    sequence: str, ignore: str = "-X"
+) -> list["Cluster"]:
+    """
+    H3N2 clusters that have matching cluster transition substitution key
     residues.
 
     Args:
@@ -249,7 +231,11 @@ def clusters_with_matching_key_residues(sequence, ignore="-X"):
     for cluster, site_aa in _cluster_key_residues.items():
         for site, aa in site_aa.items():
             i = site - 1
-            if (sequence[i] != aa) and (sequence[i] not in ignore):
+            if (
+                (sequence[i] != aa)  # aa can be a single character
+                and (sequence[i] not in ignore)
+                and (sequence[i] not in aa)  # aa can be a set of possible amino acids
+            ):
                 break
         else:
             matches.append(Cluster(cluster))
@@ -317,6 +303,9 @@ def hamming_to_cluster(
 
 class Cluster:
     def __init__(self, cluster):
+        if str(cluster).upper() not in _clusters:
+            raise ValueError(f"unknown cluster: {cluster}")
+
         self._name = str(cluster)
 
     def __repr__(self):
@@ -326,10 +315,16 @@ class Cluster:
         return self._name.upper()
 
     def __gt__(self, other):
-        return self.year > other.year
+        if isinstance(other, Cluster):
+            return self.year > other.year
+        else:
+            return str(self) > other
 
     def __lt__(self, other):
-        return self.year < other.year
+        if isinstance(other, Cluster):
+            return self.year < other.year
+        else:
+            return str(self) < other
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -534,34 +529,7 @@ _cluster_sequences = {
 }
 
 # Temporally sorted clusters
-clusters = tuple(
-    map(
-        Cluster,
-        (
-            "HK68",
-            "EN72",
-            "VI75",
-            "TX77",
-            "BK79",
-            "SI87",
-            "BE89",
-            "BE92",
-            "WU95",
-            "SY97",
-            "FU02",
-            "CA04",
-            "WI05",
-            "PE09",
-            "SW13",
-            "HK14",
-            "KA17",
-            "SW17",
-            "HK19",
-            "CA20",
-            "DA21",
-        ),
-    )
-)
+clusters = tuple(map(Cluster, _clusters))
 
 
 class NoMatchingKeyResidues(Exception):

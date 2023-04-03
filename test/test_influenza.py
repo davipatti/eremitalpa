@@ -92,8 +92,23 @@ class TestClassifyCluster2(unittest.TestCase):
         )
         self.assertEqual("WI05", ere.cluster_from_ha_2(seq))
 
+    def test_hk14_prototype(self):
+        seq = (
+            "QKIPGNDNSTATLCLGHHAVPNGTIVKTITNDRIEVTNATELVQNSSIGEICDSPHQILD"
+            "GENCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEF"
+            "NNESFNWTGVTQNGTSSACIRRSSSSFFSRLNWLTHLNYTYPALNVTMPNNEQFDKLYIW"
+            "GVHHPGTDKDQIFLYAQSSGRITVSTKRSQQAVIPNIGSRPRIRDIPSRISIYWTIVKPG"
+            "DILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCKSECITPNGSIPNDKPFQNVNRI"
+            "TYGACPRYVKHSTLKLATGMRNVPEKQT"
+        )
+        self.assertEqual("HK14", ere.cluster_from_ha_2(seq))
+
 
 class TestCluster(unittest.TestCase):
+    def test_can_only_instantiate_known_clusters(self):
+        with self.assertRaisesRegex(ValueError, "unknown cluster:"):
+            ere.Cluster("XXXX")
+
     def test_hk68_year(self):
         self.assertEqual(1968, ere.Cluster("HK68").year)
 
