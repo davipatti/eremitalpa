@@ -35,8 +35,9 @@ from .influenza import (
     plot_subs_on_tree,
     plot_tree_coloured_by_cluster,
 )
+from .lib import log_df_func
 
-__version__ = "1.1.3"
+__version__ = "1.1.4"
 
 __all__ = [
     "__version__",
@@ -55,6 +56,7 @@ __all__ = [
     "hamming_dist",
     "hamming_to_all_clusters",
     "hamming_to_cluster",
+    "log_df_func",
     "Mutation",
     "pairwise_hamming_dists",
     "plot_leaves_with_labels",
