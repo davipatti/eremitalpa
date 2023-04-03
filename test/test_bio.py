@@ -28,7 +28,16 @@ class TestSloppyTranslate(unittest.TestCase):
         self.assertEqual("FAX", ere.sloppy_translate("TTTGCTAC"))
 
     def test_question(self):
+        """? should generate X"""
         self.assertEqual("X", ere.sloppy_translate("?TG"))
+
+    def test_gap(self):
+        """- should generate X"""
+        self.assertEqual("X", ere.sloppy_translate("AT-"))
+
+    def test_gap_question(self):
+        """Combination of gaps and question marks."""
+        self.assertEqual("MXX", ere.sloppy_translate("ATG-TG?TG"))
 
 
 class TestFindMutations(unittest.TestCase):

@@ -7,6 +7,13 @@ from operator import add
 import eremitalpa as ere
 
 
+class TestInfluenzaData(unittest.TestCase):
+    def test_cluster_key_residues_expected_length(self):
+        self.assertEqual(
+            len(ere.influenza.clusters), len(ere.influenza._cluster_key_residues)
+        )
+
+
 class TestClassifyCluster(unittest.TestCase):
     def test_cluster_motifs_all_unique(self):
         motifs = reduce(add, [list(v) for v in ere._cluster_motifs.values()])
