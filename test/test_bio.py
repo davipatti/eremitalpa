@@ -284,7 +284,7 @@ class TestFilterSimilarHD(unittest.TestCase):
         Test ignore keyword.
         """
         sequences = "abc", "ade"
-        result = ere.filter_similar_hd(sequences, 1, ignore="D", case_sensitive=False)
+        result = ere.filter_similar_hd(sequences, 1, ignore="D")
         # 'd' is ignored so these sequences have an HD of 1
         # therefore both seqs should be returned.
         self.assertEqual(["abc", "ade"], result)

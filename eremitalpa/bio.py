@@ -1,6 +1,8 @@
-from tqdm import tqdm
+from typing import Iterable
 import random
 from itertools import combinations, groupby
+
+from tqdm import tqdm
 
 amino_acid_colors = {
     "A": "#F76A05",
@@ -193,16 +195,23 @@ class Mutation:
         return hash(str(self))
 
 
-def hamming_dist(a, b, ignore="-X", case_sensitive=True, per_site=False):
-    """The hamming distance between a and b.
+def hamming_dist(
+    a: str,
+    b: str,
+    ignore: Iterable[str] = "-X",
+    case_sensitive: bool = True,
+    per_site: bool = False,
+) -> float:
+    """
+    The hamming distance between a and b.
 
     Args:
-        a (str)
-        b (str)
-        ignore (str): String containing characters to ignore. If there is a
-            mismatch where one string has a character in igonre, this does not
+        a: Sequence.
+        b: Sequence.
+        ignore: String containing characters to ignore. If there is a
+            mismatch where one string has a character in ignore, this does not
             contribute to the hamming distance.
-        per_site (bool): Divide the hamming distance by the length of a and b,
+        per_site: Divide the hamming distance by the length of a and b,
             minus the number of sites with ignored characters.
 
     Returns:
@@ -310,6 +319,9 @@ def filter_similar_hd(sequences, n, progress_bar=False, ignore=None):
     Returns:
         list
     """
+    if n == 0:
+        return list(sequences)
+
     subset = []
     append = subset.append
     sequences = tqdm(tuple(sequences)) if progress_bar else sequences
