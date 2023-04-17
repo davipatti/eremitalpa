@@ -382,6 +382,13 @@ class TestConsensusSeq(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "seqs differ in length"):
             ere.consensus_seq(["abc", "ab"])
 
+    def test_case_three_sequences(self):
+        """
+        Test case with more sequences.
+        """
+        seqs = ["ABCDEFG", "ABCXXXX", "ABCDEFX"]
+        self.assertEqual("ABCDEFX", ere.consensus_seq(seqs))
+
 
 class TestTiedCounter(unittest.TestCase):
     """Tests for eremitalpa.bio.TiedCounter."""

@@ -356,6 +356,9 @@ def _generate_consensus_chars(
     seqs: tuple[str], error_without_strict_majority=True
 ) -> Generator[str, None, None]:
     """
+    Generator called by consensus_seq. This yields successive consensus characters
+    from a collection of sequences.
+
     Args:
         seqs: Sequences. Must be the same length.
         error_without_strict_majority: Raise an error if a position has a tied most
@@ -385,8 +388,11 @@ def consensus_seq(seqs: Iterable[str], case_sensitive: bool = True, **kwds) -> s
     Compute the consensus of sequences.
 
     Args:
+        seqs: Sequences.
         case_sensitive: If False, all seqs are converted to lowercase.
-        **kwds passed to _generate_consensus_chars.
+        error_without_strict_majority: Raise an error if a position has a tied most
+            common character. If set to False, a warning is raised and a single value
+            is chosen.
     """
     seqs = tuple(seq.lower() for seq in seqs) if not case_sensitive else tuple(seqs)
     return "".join(_generate_consensus_chars(seqs, **kwds))

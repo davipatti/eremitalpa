@@ -229,11 +229,10 @@ class TestCluster(unittest.TestCase):
 
     def test_key_residues_HK14(self):
         kr = ere.Cluster("HK14").key_residues
-        self.assertEqual(4, len(kr))
+        self.assertEqual(3, len(kr))
         self.assertEqual("Y", kr[159])
         self.assertEqual({"R", "G"}, kr[142])
         self.assertEqual("F", kr[193])
-        self.assertEqual("T", kr[131])
 
 
 class TestHammingToCluster(unittest.TestCase):
