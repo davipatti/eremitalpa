@@ -35,7 +35,7 @@ from .influenza import (
     plot_subs_on_tree,
     plot_tree_coloured_by_cluster,
 )
-from .lib import log_df_func
+from .lib import log_df_func, jupyter_code_cell_toggle
 
 __version__ = "1.1.4"
 
@@ -51,9 +51,12 @@ __all__ = [
     "compute_tree_layout",
     "deepest_leaf",
     "find_mutations",
+    "filter_similar_hd",
     "get_trunk",
     "guess_clusters_in_tree",
+    "grouped_sample",
     "hamming_dist",
+    "hamming_dist_lt",
     "hamming_to_all_clusters",
     "hamming_to_cluster",
     "log_df_func",
@@ -68,4 +71,5 @@ __all__ = [
     "sloppy_translate",
     "taxon_in_node_label",
     "taxon_in_node_labels",
+    "jupyter_code_cell_toggle",
 ]
