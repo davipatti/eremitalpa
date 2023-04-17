@@ -103,6 +103,20 @@ class TestClassifyCluster2(unittest.TestCase):
         )
         self.assertEqual("HK14", ere.cluster_from_ha_2(seq))
 
+    def test_all_gap(self):
+        """
+        A sequence with only gap characters should raise a NoMatchingKeyResidues error.
+        """
+        with self.assertRaises(ere.influenza.NoMatchingKeyResidues):
+            ere.cluster_from_ha_2("-" * 328)
+
+    def test_all_x(self):
+        """
+        A sequence of all X characters should raise a NoMatchingKeyResidues error.
+        """
+        with self.assertRaises(ere.influenza.NoMatchingKeyResidues):
+            ere.cluster_from_ha_2("-" * 328)
+
 
 class TestCluster(unittest.TestCase):
     def test_can_only_instantiate_known_clusters(self):

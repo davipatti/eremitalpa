@@ -194,13 +194,30 @@ def cluster_from_ha_2(sequence: str, strict_len: bool = True, max_hd: float = 10
         raise NoMatchingKeyResidues(sequence)
 
     elif len(candidates) > 1:
-        cluster, hd = min(
-            hamming_to_clusters(sequence, candidates, strict_len), key=itemgetter(1)
+        cluster_hd = dict(
+            hamming_to_clusters(sequence, candidates, strict_len=strict_len)
         )
+
+        # Filter candidates by hamming distance, the lower the better.
+        # If there are multiple candidate clusters that have the same lowest hamming
+        # distance, then raise an error
+        lowest_hd = min(cluster_hd.values())
+
+        # All clusters that have the lowest HD
+        lowest_hd_clusters = [
+            cluster for cluster, hd in cluster_hd.items() if hd == lowest_hd
+        ]
+
+        if len(lowest_hd_clusters) > 1:
+            raise TiedHammingDistances(lowest_hd_clusters)
+
+        else:
+            cluster = lowest_hd_clusters[0]
+            hd = lowest_hd
 
     else:  # len(candidates) == 1
         cluster = candidates[0]
-        hd = hamming_to_cluster(sequence, cluster, strict_len)
+        hd = hamming_to_cluster(sequence, cluster, strict_len=strict_len)
 
     if hd <= max_hd:
         return cluster
@@ -212,33 +229,27 @@ def cluster_from_ha_2(sequence: str, strict_len: bool = True, max_hd: float = 10
         )
 
 
-def clusters_with_matching_key_residues(
-    sequence: str, ignore: str = "-X"
-) -> list["Cluster"]:
+def clusters_with_matching_key_residues(sequence: str) -> list["Cluster"]:
     """
-    H3N2 clusters that have matching cluster transition substitution key
-    residues.
+    List of H3N2 clusters that have matching key residues.
 
     Args:
-        sequence (str): Amino acid sequence. At least 193 residues long.
-        ignore (str): Ignore these characters.
-
-    Returns:
-        list of clusters with matching key residues.
+        sequence (str): Amino acid sequence. At least 193 residues long (highest numeric
+            position of  a key residue).
     """
     sequence = sequence.upper()
     matches = []
     for cluster, site_aa in _cluster_key_residues.items():
         for site, aa in site_aa.items():
             i = site - 1
-            if (
-                (sequence[i] != aa)  # aa can be a single character
-                and (sequence[i] not in ignore)
-                and (sequence[i] not in aa)  # aa can be a set of possible amino acids
-            ):
+
+            # aa can be a single char str or a set of single char str
+            if sequence[i] not in aa:
                 break
+
         else:
             matches.append(Cluster(cluster))
+
     return matches
 
 
@@ -537,6 +548,10 @@ class NoMatchingKeyResidues(Exception):
 
 
 class HammingDistTooLargeError(Exception):
+    pass
+
+
+class TiedHammingDistances(Exception):
     pass
 
 
