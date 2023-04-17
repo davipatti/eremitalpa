@@ -1,5 +1,7 @@
+from pathlib import Path
 from typing import Union, Iterable
 from operator import itemgetter
+import json
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
@@ -305,7 +307,7 @@ def hamming_to_cluster(
 
     return hamming_dist(
         sequence,
-        Cluster(cluster).sequence,
+        Cluster(cluster).aa_sequence,
         ignore="-X",
         case_sensitive=False,
         per_site=False,
@@ -364,11 +366,17 @@ class Cluster:
         return cluster_colors[self._name]
 
     @property
-    def sequence(self):
-        return _cluster_sequences[self._name]
+    def aa_sequence(self):
+        "Representative amino acid sequence."
+        return _cluster_aa_sequences[self._name]
+
+    @property
+    def nt_sequence(self):
+        "Representative nucleotide sequence."
+        return _cluster_nt_sequences[self._name]
 
 
-_cluster_sequences = {
+_cluster_aa_sequences = {
     "HK68": (  # Cluster consensus
         "QDLPGNDNSTATLCLGHHAVPNGTLVKTITDDQIEVTNATELVQSSSTGKICNNPHRILD"
         "GINCTLIDALLGDPHCDVFQDETWDLFVERSKAFSNCYPYDVPDYASLRSLVASSGTLEF"
@@ -771,3 +779,13 @@ def plot_subs_on_tree(
                 ),
                 **kws,
             )
+
+
+def load_cluster_nt_consensus() -> dict[str, str]:
+    "Load cluster nt consensus seqs."
+    path = Path(__file__).parent.parent.joinpath("data", "flu", "cluster_cons.json")
+    with open(path, "r") as fp:
+        return json.load(fp)
+
+
+_cluster_nt_sequences = load_cluster_nt_consensus()

@@ -22,7 +22,7 @@ class TestAllClusters(unittest.TestCase):
     def test_cluster_sequences_all_len_328(self):
         for cluster in ere.influenza.clusters:
             with self.subTest(cluster=cluster):
-                self.assertEqual(328, len(ere.Cluster(cluster).sequence))
+                self.assertEqual(328, len(ere.Cluster(cluster).aa_sequence))
 
     def test_all_clusters_have_color(self):
         for cluster in ere.influenza.clusters:
@@ -119,6 +119,11 @@ class TestClassifyCluster2(unittest.TestCase):
 
 
 class TestCluster(unittest.TestCase):
+    def test_clusters_have_nt_sequence(self):
+        for cluster in ere.influenza.clusters:
+            with self.subTest(cluster=cluster):
+                self.assertIsInstance(cluster.nt_sequence, str)
+
     def test_can_only_instantiate_known_clusters(self):
         with self.assertRaisesRegex(ValueError, "unknown cluster:"):
             ere.Cluster("XXXX")
