@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
 import unittest
-
+from collections import Counter
 import random
-import eremitalpa as ere
 from operator import itemgetter
 from string import ascii_lowercase
+
 from Bio.Seq import Seq
+
+import eremitalpa as ere
 
 
 class TestSloppyTranslate(unittest.TestCase):
@@ -329,6 +331,103 @@ class TestHammingDistanceLt(unittest.TestCase):
         Test the function is case sensitive.
         """
         self.assertFalse(ere.hamming_dist_lt("abc", "ABC", 1))
+
+
+class TestConsensusSeq(unittest.TestCase):
+    """
+    Tests for eremitalpa.bio.consensus_seq.
+    """
+
+    def test_returns_str(self):
+        """
+        Should return a str
+        """
+        self.assertIsInstance(ere.consensus_seq(["abc", "abc"]), str)
+
+    def test_consensus_identical_seqs(self):
+        """
+        The consensus of identical sequences should be one of the sequences.
+        """
+        self.assertEqual("abc", ere.consensus_seq(["abc", "abc"]))
+
+    def test_warns_no_unique_consensus(self):
+        """
+        Warning is raised with strict_majority=False if there is no unique consensus.
+
+        (E.g. with matched character counts at one or more positions).
+        """
+        with self.assertWarnsRegex(Warning, "no strict majority at index"):
+            ere.consensus_seq(["abc", "abd"], error_without_strict_majority=False)
+
+    def test_value_error_no_unique_consensus(self):
+        """
+        ValueError is raised with strict_majority=True (default value) if there is no
+        unique consensus.
+
+        (E.g. with matched character counts at one or more positions).
+        """
+        with self.assertRaisesRegex(ValueError, "no strict majority at index"):
+            ere.consensus_seq(["abc", "abd"])
+
+    def test_case_insensitive(self):
+        """
+        Check the case_insensitive flag works correctly.
+        """
+        self.assertEqual("abc", ere.consensus_seq(["abc", "ABC"], case_sensitive=False))
+
+    def test_length_mismatch(self):
+        """
+        A ValueError should be raised if sequences of different lengths are passed.
+        """
+        with self.assertRaisesRegex(ValueError, "seqs differ in length"):
+            ere.consensus_seq(["abc", "ab"])
+
+
+class TestTiedCounter(unittest.TestCase):
+    """Tests for eremitalpa.bio.TiedCounter."""
+
+    def test_regular_counter_tied_count(self):
+        """
+        collections.Counter returns only a single most common item, even if there are
+        multiple most common items.
+        """
+        self.assertEqual(
+            [
+                ("a", 2),
+            ],
+            Counter("ababc").most_common(1),
+        )
+
+    def test_tied_count_n_eq_1(self):
+        """
+        With multiple most common items, TiedCounter.most_common should return
+        all most common items.
+        """
+        self.assertEqual(
+            [
+                ("a", 2),
+                ("b", 2),
+            ],
+            ere.TiedCounter("ababc").most_common(1),
+        )
+
+    def test_tied_count_n_None(self):
+        """
+        With n as None, ere.TiedCounter should behave like collections.Counter.
+        """
+        self.assertEqual(
+            Counter("ababc").most_common(),
+            ere.TiedCounter("ababc").most_common(),
+        )
+
+    def test_tied_count_n_2(self):
+        """
+        With n as 2, ere.TiedCounter should behave like collections.Counter.
+        """
+        self.assertEqual(
+            Counter("ababc").most_common(2),
+            ere.TiedCounter("ababc").most_common(2),
+        )
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ from __future__ import absolute_import as _
 
 from .bio import (
     amino_acid_colors,
+    consensus_seq,
     find_mutations,
     filter_similar_hd,
     grouped_sample,
@@ -10,6 +11,7 @@ from .bio import (
     Mutation,
     pairwise_hamming_dists,
     sloppy_translate,
+    TiedCounter,
 )
 from .eremitalpa import (
     compare_trees,
@@ -43,6 +45,7 @@ __all__ = [
     "__version__",
     "_cluster_motifs",
     "amino_acid_colors",
+    "consensus_seq",
     "cluster_colors",
     "cluster_from_ha_2",
     "cluster_from_ha",
@@ -71,5 +74,6 @@ __all__ = [
     "sloppy_translate",
     "taxon_in_node_label",
     "taxon_in_node_labels",
+    "TiedCounter",
     "jupyter_code_cell_toggle",
 ]

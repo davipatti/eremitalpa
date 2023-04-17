@@ -1,6 +1,10 @@
-from typing import Iterable
+from typing import Iterable, TypeVar, Generator
 import random
+from collections import Counter
 from itertools import combinations, groupby
+import warnings
+
+_T = TypeVar("_T")
 
 from tqdm import tqdm
 
@@ -332,3 +336,57 @@ def filter_similar_hd(sequences, n, progress_bar=False, ignore=None):
         else:
             append(sequence)
     return subset
+
+
+class TiedCounter(Counter):
+    def most_common(self, n: int | None = None) -> list[tuple[_T, int]]:
+        """
+        If n=1 and there are more than one item that has the maximum count, return all of
+        them, not just one. If n is not 1, do the same thing as normal
+        Counter.most_common.
+        """
+        if n == 1:
+            max_value = max(self.values())
+            return [(k, v) for (k, v) in self.items() if v == max_value]
+        else:
+            return super().most_common(n)
+
+
+def _generate_consensus_chars(
+    seqs: tuple[str], error_without_strict_majority=True
+) -> Generator[str, None, None]:
+    """
+    Args:
+        seqs: Sequences. Must be the same length.
+        error_without_strict_majority: Raise an error if a position has a tied most
+            common character. If set to False, a warning is raised and a single value
+            is chosen.
+    """
+    if len(set(map(len, seqs))) != 1:
+        raise ValueError("seqs differ in length")
+
+    for i in range(len(seqs[0])):
+        counts = TiedCounter(seq[i] for seq in seqs)  # E.g. A:10, T:5, C: 2, G:10
+        most_common = counts.most_common(1)
+
+        if len(most_common) == 1:
+            yield most_common[0][0]
+        else:
+            msg = f"no strict majority at index {i}: {most_common}"
+            if error_without_strict_majority:
+                raise ValueError(msg)
+            else:
+                warnings.warn(msg)
+                yield most_common[0][0]
+
+
+def consensus_seq(seqs: Iterable[str], case_sensitive: bool = True, **kwds) -> str:
+    """
+    Compute the consensus of sequences.
+
+    Args:
+        case_sensitive: If False, all seqs are converted to lowercase.
+        **kwds passed to _generate_consensus_chars.
+    """
+    seqs = tuple(seq.lower() for seq in seqs) if not case_sensitive else tuple(seqs)
+    return "".join(_generate_consensus_chars(seqs, **kwds))
