@@ -2,6 +2,7 @@
 Drawing phylogenetic trees (dendropy.Tree instances) using matplotlib.
 """
 
+from typing import Optional
 from operator import attrgetter
 import warnings
 import dendropy as dp
@@ -12,28 +13,59 @@ from matplotlib.collections import LineCollection
 
 # Defaults
 default_edge_kws = dict(color="black", linewidth=0.5)
-default_leaf_kws = dict(color="black", s=1)
+default_leaf_kws = dict(s=0)
 default_internal_kws = dict()
 default_label_kws = dict(
     horizontalalignment="left", verticalalignment="center", fontsize=8
 )
 
 
-def compute_tree_layout(tree, has_brlens=True):
+def load_tree(
+    path: str,
+    schema: str = "newick",
+    outgroup: Optional[str] = None,
+    msa_path: Optional[str] = None,
+    **kwds,
+) -> dp.Tree:
+    """
+    Load a tree from a file.
+
+    Args:
+        path: Path to file containing tree.
+        schema: See dendropy.Tree.get
+        outgroup: Name of taxon to use as outgroup.
+        msa_path: Path to fasta file containing leaf sequences.
+        kwds: Passed to add_sequences_to_tree
+    """
+    tree = dp.Tree.get(path=path, schema=schema)
+
+    if msa_path:
+        add_sequences_to_tree(tree, path=msa_path, **kwds)
+
+    if outgroup is not None:
+        og = tree.find_node_with_taxon_label(outgroup)
+        tree.reroot_at_node(og)
+
+    tree.ladderize()
+
+    return tree
+
+
+def compute_tree_layout(
+    tree: dp.Tree, has_brlens: bool = True, copy: bool = False
+) -> dp.Tree:
     """Compute layout parameters for a tree.
 
     Each node gets _x and _y values.
     The tree gets _xlim and _ylim values (tuples).
 
     Args:
-        tree (dendropy.Tree)
-        has_brlens (bool): Does the tree have branch lengths?
-
-    Returns:
-        dendropy.Tree
+        tree
+        has_brlens: Does the tree have branch lengths?
+        copy: Make a fresh copy of the tree.
     """
-    # Fresh tree instance
-    tree = dp.Tree(tree)
+    if copy:
+        tree = dp.Tree(tree)
 
     # Add branch lengths if necessary
     if not has_brlens:
@@ -177,7 +209,8 @@ def plot_tree(
 
 
 def plot_leaves_with_labels(tree, labels, ax=None, **kws):
-    """Plot leaves that have taxon labels in labels.
+    """
+    Plot leaves that have taxon labels in labels.
 
     Args:
         tree (dendropy.Tree)
@@ -330,15 +363,44 @@ def read_raxml_ancestral_sequences(
         node.sequence = internal_sequences[key]
 
     if leaf_seqs:
-        leaf_sequences = {}
-        with open(leaf_seqs, "r") as handle:
-            for r in SeqIO.parse(handle, format="fasta"):
-                leaf_sequences[r.description] = str(r.seq)
-
-        for node in tree.leaf_node_iter():
-            node.sequence = leaf_sequences[node.taxon.label]
+        add_sequences_to_tree(tree, leaf_seqs)
 
     return tree
+
+
+def add_sequences_to_tree(
+    tree: dp.Tree,
+    path: str,
+    labeller: Optional[callable] = None,
+    seqformatter: Optional[callable] = None,
+    attr_name: str = "sequence",
+) -> None:
+    """
+    Add sequences to leaves inplace.
+
+    Args:
+        tree: Dendropy tree.
+        path: Path to multiple sequence alignment. Taxon labels in tree must match the
+            fasta description.
+        labeller: Function that takes a FASTA description and returns the name of
+            associated taxon in the tree. For instance, a full fasta description might
+            look like:
+
+                >cdsUUB77424 A/Maryland/12786/2022 2022/04/07 HA
+
+            RAxML would call this taxon just 'cdsUUB77424'. So the callable would have to
+            be something like: lambda x: x.split()[0]
+        seqformatter
+    """
+    seqs = {}
+    with open(path, "r") as handle:
+        for r in SeqIO.parse(handle, format="fasta"):
+            key = labeller(r.description) if labeller is not None else r.description
+            seq = seqformatter(r.seq) if seqformatter is not None else r.seq
+            seqs[key] = seq
+
+    for node in tree.leaf_node_iter():
+        node.sequence = seqs[node.taxon.label]
 
 
 def sorted_leaf_labels(node):

@@ -8,6 +8,9 @@ _T = TypeVar("_T")
 
 from tqdm import tqdm
 
+AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWY")
+
+
 amino_acid_colors = {
     "A": "#F76A05",
     "C": "#dde8cf",
@@ -128,7 +131,11 @@ def sloppy_translate(sequence):
     return peptide
 
 
-def find_mutations(a, b, offset=0):
+def find_mutations(*args, **kwargs):
+    raise NotImplementedError("This function is now called 'find_substitutions'")
+
+
+def find_substitutions(a, b, offset=0):
     """Find mutations between strings a and b.
 
     Args:
@@ -148,18 +155,18 @@ def find_mutations(a, b, offset=0):
         raise ValueError("a and b must have same length")
 
     return tuple(
-        Mutation(_a, i + offset, _b)
+        Substitution(_a, i + offset, _b)
         for i, (_a, _b) in enumerate(zip(a, b), start=1)
         if _a != _b
     )
 
 
-class Mutation:
+class Substitution:
     def __init__(self, *args):
         """Change of a character at a site.
 
         Instantiate using either 1 or three arguments:
-            Mutation("N145K") or Mutation("N", 145, "K")
+            Substitution("N145K") or Substitution("N", 145, "K")
         """
         if len(args) == 1:
             arg = args[0]
@@ -172,13 +179,13 @@ class Mutation:
             self.b = args[-1]
         else:
             raise ValueError(
-                "Pass 1 or 3 arguments. E.g. Mutation('N145K') or "
-                "Mutation('N', 145, 'K')"
+                "Pass 1 or 3 arguments. E.g. Substitution('N145K') or "
+                "Substitution('N', 145, 'K')"
             )
-        self._elements = (self.a, self.pos, self.b)
+        self._elements = self.a, self.pos, self.b
 
     def __repr__(self):
-        return "Mutation({}, {}, {})".format(self.a, self.pos, self.b)
+        return "Substitution({}, {}, {})".format(self.a, self.pos, self.b)
 
     def __str__(self):
         return "{}{}{}".format(self.a, self.pos, self.b)
@@ -190,7 +197,7 @@ class Mutation:
         return (self.pos, self.a, self.b) < (other.pos, other.a, other.b)
 
     def __eq__(self, other):
-        return self._elements == other._elements
+        return str(self) == str(other)
 
     def __getitem__(self, pos):
         return self._elements[pos]

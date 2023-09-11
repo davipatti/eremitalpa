@@ -285,5 +285,63 @@ class TestHammingToAllClusters(unittest.TestCase):
         self.assertEqual(0, dict(rv)["HK68"])
 
 
+class TestClusterTransition(unittest.TestCase):
+    def test_unknown_transition(self):
+        """
+        Unknown transition should generate a ValueError.
+        """
+        with self.assertRaisesRegex(ValueError, "unrecognised cluster transition"):
+            ere.ClusterTransition("HK68", "BK79")
+
+    def test_known_transition_str(self):
+        """
+        Should be able to pass clusters as strings.
+        """
+        ere.ClusterTransition("HK68", "EN72")
+
+    def test_known_transition_cluster(self):
+        """
+        Should be able to pass clusters as Cluster instances.
+        """
+        ere.ClusterTransition(ere.Cluster("HK68"), ere.Cluster("EN72"))
+
+    def test_hk68_preceding(self):
+        """
+        HK68 has no preceding transitions.
+        """
+        result = tuple(ere.ClusterTransition("HK68", "EN72").preceding_transitions)
+        self.assertEqual(tuple(), result)
+
+    def test_EN72_preceding(self):
+        """
+        Simple test case.
+        """
+        result = tuple(ere.ClusterTransition("EN72", "VI75").preceding_transitions)
+        self.assertEqual((ere.ClusterTransition("HK68", "EN72"),), result)
+
+    def test_SI87BE89_before_SI87BE92(self):
+        """
+        Slightly more complex test case.
+        """
+        si87_be89 = ere.ClusterTransition("SI87", "BE89")
+        si87_be92 = ere.ClusterTransition("SI87", "BE92")
+        self.assertIn(si87_be89, tuple(si87_be92.preceding_transitions))
+
+    def test_unpackable(self):
+        """
+        Should be able to unpack the clusters in a transition.
+        """
+        c0, c1 = ere.ClusterTransition("SI87", "BE89")
+        self.assertEqual(ere.Cluster("SI87"), c0)
+        self.assertEqual(ere.Cluster("BE89"), c1)
+
+    def test_from_tuple(self):
+        """
+        Should be able to make an instance from a tuple.
+        """
+        ct = ere.ClusterTransition.from_tuple(("HK68", "EN72"))
+        self.assertIsInstance(ct, ere.ClusterTransition)
+
+
 if __name__ == "__main__":
     unittest.main()

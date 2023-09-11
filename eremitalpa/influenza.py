@@ -1,12 +1,12 @@
 from pathlib import Path
-from typing import Union, Iterable
+from typing import Union, Iterable, Generator
 from operator import itemgetter
 import json
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
-from .bio import find_mutations, hamming_dist
+from .bio import find_mutations, hamming_dist, sloppy_translate
 from .eremitalpa import get_trunk, plot_tree
 
 """
@@ -14,6 +14,8 @@ Influenza related data.
 """
 
 b7 = 145, 155, 156, 158, 159, 189, 193
+
+# See also `clusters` defined below
 _clusters = (
     "HK68",
     "EN72",
@@ -37,6 +39,31 @@ _clusters = (
     "CA20",
     "DA21",
 )
+
+# See also `cluster_transitions` defined below
+_cluster_transitions = (
+    ("HK68", "EN72"),
+    ("EN72", "VI75"),
+    ("VI75", "TX77"),
+    ("TX77", "BK79"),
+    ("BK79", "SI87"),
+    ("SI87", "BE89"),
+    ("SI87", "BE92"),
+    ("BE92", "WU95"),
+    ("WU95", "SY97"),
+    ("SY97", "FU02"),
+    ("FU02", "CA04"),
+    ("CA04", "WI05"),
+    ("WI05", "PE09"),
+    ("PE09", "SW13"),
+    ("PE09", "HK14"),
+    ("SW13", "KA17"),
+    ("HK14", "SW17"),
+    ("HK14", "HK19"),
+    ("HK14", "CA20"),
+    ("CA20", "DA21"),
+)
+
 
 """
 Map cluster -> motifs
@@ -315,34 +342,28 @@ def hamming_to_cluster(
 
 
 class Cluster:
-    def __init__(self, cluster):
+    def __init__(self, cluster) -> None:
         if str(cluster).upper() not in _clusters:
             raise ValueError(f"unknown cluster: {cluster}")
 
         self._name = str(cluster)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Cluster('{}')".format(self._name)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._name.upper()
 
-    def __gt__(self, other):
-        if isinstance(other, Cluster):
-            return self.year > other.year
-        else:
-            return str(self) > other
+    def __gt__(self, other: Union[str, "Cluster"]) -> bool:
+        return self.year > Cluster(other).year
 
-    def __lt__(self, other):
-        if isinstance(other, Cluster):
-            return self.year < other.year
-        else:
-            return str(self) < other
+    def __lt__(self, other: Union[str, "Cluster"]) -> bool:
+        return self.year < Cluster(other).year
 
-    def __eq__(self, other):
+    def __eq__(self, other: Union[str, "Cluster"]) -> bool:
         return str(self) == str(other)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(str(self))
 
     @property
@@ -366,14 +387,67 @@ class Cluster:
         return cluster_colors[self._name]
 
     @property
-    def aa_sequence(self):
-        "Representative amino acid sequence."
+    def aa_sequence(self: str):
+        """Representative amino acid sequence."""
         return _cluster_aa_sequences[self._name]
 
     @property
-    def nt_sequence(self):
-        "Representative nucleotide sequence."
+    def nt_sequence(self) -> str:
+        """Representative nucleotide sequence."""
         return _cluster_nt_sequences[self._name]
+
+    def codon(self, n: int) -> str:
+        """Codon at amino acid position n. 1-indexed."""
+        return self.nt_sequence[(n - 1) * 3 : n * 3]
+
+
+class ClusterTransition:
+    def __init__(self, c0: Union[str, Cluster], c1: Union[str, Cluster]) -> None:
+        """A cluster transition."""
+        if (c0, c1) not in _cluster_transitions:
+            raise ValueError(f"unrecognised cluster transition: {c0, c1}")
+
+        self.c0 = Cluster(c0)
+        self.c1 = Cluster(c1)
+        self._clusters = self.c0, self.c1
+
+        if self.c0.year >= self.c1.year:
+            raise ValueError(f"c0 year must be less than c1 year")
+
+    @classmethod
+    def from_tuple(cls, c0c1) -> "ClusterTransition":
+        """Make an instance from a tuple"""
+        return cls(*c0c1)
+
+    def __repr__(self) -> str:
+        return f"ClusterTransition({self.c0}, {self.c1})"
+
+    def __str__(self) -> str:
+        return f"{self.c0} -> {self.c1}"
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, tuple):
+            other = ClusterTransition.from_tuple(other)
+        return self.c0 == other.c0 and self.c1 == other.c1
+
+    def __lt__(self, other) -> bool:
+        return self.c1 < other.c1
+
+    def __gt__(self, other) -> bool:
+        return self.c1 > other.c1
+
+    def __getitem__(self, item) -> Cluster:
+        return self._clusters[item]
+
+    def __hash__(self) -> int:
+        return hash(self._clusters)
+
+    @property
+    def preceding_transitions(self) -> Generator["ClusterTransition", None, None]:
+        """All preceding cluster transitions"""
+        for ct in cluster_transitions:
+            if ct < self:
+                yield ct
 
 
 _cluster_aa_sequences = {
@@ -547,8 +621,9 @@ _cluster_aa_sequences = {
     ),
 }
 
-# Temporally sorted clusters
-clusters = tuple(map(Cluster, _clusters))
+# Temporally sorted clusters and cluster transitions
+clusters = tuple(Cluster(c) for c in _clusters)
+cluster_transitions = tuple(ClusterTransition(*pair) for pair in _cluster_transitions)
 
 
 class NoMatchingKeyResidues(Exception):
@@ -789,3 +864,10 @@ def load_cluster_nt_consensus() -> dict[str, str]:
 
 
 _cluster_nt_sequences = load_cluster_nt_consensus()
+
+
+def translate_trim_default_ha(nt: str) -> str:
+    """
+    Take a default HA nucleotide sequence and return an HA1 sequence.
+    """
+    return sloppy_translate(nt)[16 : 328 + 16]

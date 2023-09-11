@@ -4,6 +4,12 @@ from typing import Callable
 import time
 import functools
 
+import numpy as np
+import arviz as az
+import matplotlib as mpl
+import pandas as pd
+import adjustText
+
 from IPython.display import HTML
 
 
@@ -34,3 +40,83 @@ def log_df_func(f: Callable, *args, **kwargs):
         return out
 
     return wrapped
+
+
+def compute_errorbars(
+    trace: az.InferenceData, varname: str, hdi_prob: float = 0.95
+) -> np.ndarray:
+    """
+    Compute HDI widths for plotting with plt.errorbar.
+
+    Args:
+        trace: E.g. the output from pymc.sample.
+        varname: Variable to compute error bars for.
+        hdi_prob: Width of the HDI.
+
+    Returns:
+        (2, n) array of the lower and upper error bar sizes for passing to plt.errorbar.
+    """
+    hdi = az.hdi(trace, var_names=varname, hdi_prob=hdi_prob)[varname].values
+    mean = az.extract(trace).mean(dim="sample")[varname]
+    return np.stack([mean - hdi[:, 0], hdi[:, 1] - mean])
+
+
+def mean(values):
+    return sum(values) / len(values)
+
+
+def annotate_points(
+    df: pd.DataFrame, ax: mpl.axes.Axes, n: int = -1, adjust: bool = True, **kwds
+):
+    """
+    Label (x, y) points on a matplotlib ax.
+
+    Args:
+        df: Pandas DataFrame with 2 columns, (x, y) respectively. Index contains the
+         labels.
+        n: Label this many points. Default (-1) annotates all points.
+        ax: Matplotlib ax
+        adjust: Use adjustText.adjust_text to try to prevent label overplotting.
+        **kwds: Passed to adjustText.adjustText
+    """
+    top = df.apply(mean, axis=1).sort_values(ascending=False).head(n).index
+    labels = [ax.text(*xy, site) for site, xy in df.loc[top].iterrows()]
+    if adjust:
+        adjustText.adjust_text(labels, ax=ax, **kwds)
+
+
+def find_runs(arr: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Find runs of consecutive items in an array.
+
+    Args:
+        arr: An array
+
+    Returns:
+        3-tuple containing run values, starts and lengths.
+    """
+
+    # ensure array
+    arr = np.asanyarray(arr)
+    if arr.ndim != 1:
+        raise ValueError("only 1D array supported")
+    n = arr.shape[0]
+
+    # handle empty array
+    if n == 0:
+        return np.array([]), np.array([]), np.array([])
+
+    else:
+        # find run starts
+        loc_run_start = np.empty(n, dtype=bool)
+        loc_run_start[0] = True
+        np.not_equal(arr[:-1], arr[1:], out=loc_run_start[1:])
+        starts = np.nonzero(loc_run_start)[0]
+
+        # find run values
+        values = arr[loc_run_start]
+
+        # find run lengths
+        lengths = np.diff(np.append(starts, n))
+
+        return values, starts, lengths
