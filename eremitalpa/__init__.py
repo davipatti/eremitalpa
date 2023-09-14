@@ -48,6 +48,7 @@ from .lib import (
     find_runs,
     jupyter_code_cell_toggle,
     log_df_func,
+    split_pairs,
 )
 
 __version__ = "1.1.4"
@@ -100,4 +101,5 @@ __all__ = [
     "wider10",
     "wider15",
     "wider5",
+    "split_pairs",
 ]

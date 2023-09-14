@@ -1,6 +1,7 @@
 """Generic library functions."""
 
-from typing import Callable
+from collections import Counter
+from typing import Callable, Iterable
 import time
 import functools
 
@@ -120,3 +121,28 @@ def find_runs(arr: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         lengths = np.diff(np.append(starts, n))
 
         return values, starts, lengths
+
+
+def split_pairs(values: Iterable) -> list:
+    """
+    If values are repeated, e.g.:
+
+        1, 5, 5, 8
+
+    Then 'split' them by adding and subtracting 0.5 from each item in the pair:
+
+        1, 4.5, 5.5, 8
+    """
+    values = list(values)
+    counts = Counter(values)
+    for value, count in counts.items():
+        if count == 2:
+            i = values.index(value)  # index first occurance
+            j = values.index(value, i + 1)  # index second occurance
+            values[i] -= 0.5
+            values[j] += 0.5
+        elif count != 1:
+            raise NotImplementedError(
+                f"{value} occurs {count} times, only implemented pairs"
+            )
+    return values
