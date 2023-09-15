@@ -5,8 +5,10 @@ import json
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+import pandas as pd
 
-from .bio import find_mutations, hamming_dist, sloppy_translate
+from .lib import cal_months_diff
+from .bio import find_mutations, hamming_dist, sloppy_translate, amino_acid_colors
 from .eremitalpa import get_trunk, plot_tree
 
 """
@@ -871,3 +873,75 @@ def translate_trim_default_ha(nt: str) -> str:
     Take a default HA nucleotide sequence and return an HA1 sequence.
     """
     return sloppy_translate(nt)[16 : 328 + 16]
+
+
+def aa_counts_thru_time(df_seq: pd.DataFrame, site: int, ignore="-X") -> pd.DataFrame:
+    """
+    Make a DataFrame containing counts of amino acids that were sampled in months at a
+    particular sequence site.
+
+    Columns in the returned DataFrame are dates, the index is amino acids.
+
+    Args:
+        df_seq: Must contain columns "aa" which contains amino acid sequences and "dt"
+            which contains datetime objects of collection dates.
+        site: Count amino acids at this site. Note, this is 1-indexed.
+        ignore: Don't include these characters in the counts.
+    """
+    df = (
+        pd.DataFrame(
+            {
+                month: df_grp["aa"].str[site - 1].value_counts().sort_index()
+                for (month, df_grp) in df_seq.groupby(pd.Grouper(key="dt", freq="M"))
+            }
+        )
+        .T.resample("M", axis=0)  # Make sure we're not missing any months
+        .asfreq()
+        .fillna(0)
+        .T
+    )
+    aas = sorted(set(df.index) - set(ignore))
+    return df.loc[aas]
+
+
+def plot_aa_freq_thru_time(
+    t0: pd.Timestamp,
+    t_end: pd.Timestamp,
+    df_seq: pd.DataFrame,
+    site: int,
+    proportion=False,
+    ax=None,
+    ignore="X-",
+    blank_xtick_labels=False,
+):
+    ax = plt.gca() if ax is None else ax
+
+    df = aa_counts_thru_time(df_seq.query("dt > @t0"), site=site, ignore=ignore)
+
+    if proportion:
+        df /= df.sum(axis=0)
+
+    x = [cal_months_diff(month, t0) for month in df.columns]
+
+    bottom = 0
+    for aa, row in df.iterrows():
+        ax.bar(
+            x=x,
+            height=row,
+            bottom=bottom,
+            facecolor=amino_acid_colors[aa],
+            width=1,
+            align="edge",
+            label=aa,
+        )
+        bottom += row
+
+    xticks = df.columns[::12]
+
+    ax.set_xticks(
+        [cal_months_diff(x, t0) for x in xticks],
+        labels=["" for _ in xticks]
+        if blank_xtick_labels
+        else xticks.astype(str).str.slice(0, 7),
+    )
+    ax.set_xlim(0, cal_months_diff(t_end, t0))

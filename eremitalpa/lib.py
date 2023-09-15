@@ -146,3 +146,8 @@ def split_pairs(values: Iterable) -> list:
                 f"{value} occurs {count} times, only implemented pairs"
             )
     return values
+
+
+def cal_months_diff(date1: pd.Timestamp, date0: pd.Timestamp) -> int:
+    """Number of calendar months between two dates (date1 - date0)"""
+    return (pd.Period(date1, freq="M") - pd.Period(date0, freq="M")).n

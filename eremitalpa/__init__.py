@@ -4,6 +4,7 @@ from .bio import (
     consensus_seq,
     filter_similar_hd,
     find_mutations,
+    find_substitutions,
     grouped_sample,
     hamming_dist_lt,
     hamming_dist,
@@ -26,6 +27,7 @@ from .eremitalpa import (
     taxon_in_node_labels,
 )
 from .influenza import (
+    aa_counts_thru_time,
     _cluster_motifs,
     cluster_colors,
     cluster_from_ha_2,
@@ -38,6 +40,7 @@ from .influenza import (
     hamming_to_all_clusters,
     hamming_to_cluster,
     plot_subs_on_tree,
+    plot_aa_freq_thru_time,
     plot_tree_coloured_by_cluster,
     translate_trim_default_ha,
 )
@@ -49,6 +52,7 @@ from .lib import (
     jupyter_code_cell_toggle,
     log_df_func,
     split_pairs,
+    cal_months_diff,
 )
 
 __version__ = "1.1.4"
@@ -56,6 +60,7 @@ __version__ = "1.1.4"
 __all__ = [
     "__version__",
     "_cluster_motifs",
+    "aa_counts_thru_time",
     "amino_acid_colors",
     "AMINO_ACIDS",
     "annotate_points",
@@ -102,4 +107,7 @@ __all__ = [
     "wider15",
     "wider5",
     "split_pairs",
+    "cal_months_diff",
+    "plot_aa_freq_thru_time",
+    "find_substitutions",
 ]

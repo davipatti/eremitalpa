@@ -5,4 +5,4 @@ check:
 	pycodestyle **/*.py
 
 test:
-	pytest
+	pytest -W ignore::DeprecationWarning::
