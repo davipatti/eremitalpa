@@ -2,13 +2,14 @@
 Drawing phylogenetic trees (dendropy.Tree instances) using matplotlib.
 """
 
-from typing import Optional
+from collections import namedtuple, Counter
+from typing import Optional, Generator
 from operator import attrgetter
 import warnings
 import dendropy as dp
 import matplotlib
 import matplotlib.pyplot as plt
-from Bio import SeqIO
+from Bio import SeqIO, Align
 from matplotlib.collections import LineCollection
 
 # Defaults
@@ -532,3 +533,29 @@ def prune_nodes_with_labels(tree, labels):
     tree.prune_nodes(nodes)
     tree.prune_leaves_without_taxa(recursive=True)
     return tree
+
+
+Column = namedtuple("Column", ["site", "aas"])
+
+
+class MultipleSequenceAlignment(Align.MultipleSeqAlignment):
+    def variable_sites(
+        self, min_2nd_most_freq: int = 1
+    ) -> Generator[Column, None, None]:
+        """
+        Generator for variable sites in the alignment.
+
+        Args:
+            min_2nd_most_freq: Used to filter out sites that have low variability. For
+                instance if min_2nd_most_freq is 2 a column containing 'AAAAT' should be
+                excluded because the second most frequent character (T) has a frequency
+                of 1.
+        """
+        for i in range(self.get_alignment_length()):
+            site = i + 1
+            aas = self[:, i]
+            if len(set(aas)) != 1:
+                # Frequency of the second most common
+                _, count = Counter(aas).most_common()[1]
+                if count >= min_2nd_most_freq:
+                    yield Column(site, aas)

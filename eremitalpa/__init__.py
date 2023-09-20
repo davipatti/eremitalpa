@@ -1,3 +1,5 @@
+import eremitalpa
+
 from .bio import (
     amino_acid_colors,
     AMINO_ACIDS,
@@ -25,6 +27,7 @@ from .eremitalpa import (
     read_raxml_ancestral_sequences,
     taxon_in_node_label,
     taxon_in_node_labels,
+    MultipleSequenceAlignment,
 )
 from .influenza import (
     aa_counts_thru_time,
@@ -76,6 +79,7 @@ __all__ = [
     "compute_errorbars",
     "compute_tree_layout",
     "consensus_seq",
+    "eremitalpa",
     "deepest_leaf",
     "filter_similar_hd",
     "find_mutations",
@@ -110,4 +114,5 @@ __all__ = [
     "cal_months_diff",
     "plot_aa_freq_thru_time",
     "find_substitutions",
+    "MultipleSequenceAlignment",
 ]
