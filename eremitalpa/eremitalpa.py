@@ -18,7 +18,7 @@ from .bio import amino_acid_colors
 Axes = mp.axes.Axes
 
 # Defaults
-default_edge_kws = dict(color="black", linewidth=0.5)
+default_edge_kws = dict(color="black", linewidth=0.5, clip_on=False)
 default_leaf_kws = dict(s=0)
 default_internal_kws = dict()
 default_label_kws = dict(
