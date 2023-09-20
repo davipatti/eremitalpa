@@ -125,7 +125,7 @@ def plot_tree(
             ax.scatter. For arguments that can be a vector, the order and
             length should match tree.internal_nodes().
         ax (matplotlib.ax).
-        labels (iterable). Names of taxa to add labels for.
+        labels (iterable or 'all'). Names of taxa to add labels for.
         compute_layout (bool). Compute the layout or not. If the tree nodes
             already have _x and _y attributes, then just plot.
 
@@ -143,6 +143,9 @@ def plot_tree(
 
     """
     ax = plt.gca() if ax is None else ax
+
+    if labels == "all":
+        labels = [node.taxon.label for node in tree.leaf_nodes()]
 
     label_kws = {**default_label_kws, **label_kws}
     leaf_kws = {**default_leaf_kws, **leaf_kws}
