@@ -3,7 +3,7 @@ Drawing phylogenetic trees (dendropy.Tree instances) using matplotlib.
 """
 
 from collections import namedtuple, Counter
-from typing import Optional, Generator
+from typing import Optional, Generator, Iterable, Union, Literal
 from operator import attrgetter
 import warnings
 import dendropy as dp
@@ -11,7 +11,11 @@ import matplotlib as mp
 import matplotlib.pyplot as plt
 import numpy as np
 from Bio import SeqIO, Align
+from Bio.SeqRecord import SeqRecord
+
 from .bio import amino_acid_colors
+
+Axes = mp.axes.Axes
 
 # Defaults
 default_edge_kws = dict(color="black", linewidth=0.5)
@@ -22,35 +26,84 @@ default_label_kws = dict(
 )
 
 
-def load_tree(
-    path: str,
-    schema: str = "newick",
-    outgroup: Optional[str] = None,
-    msa_path: Optional[str] = None,
-    **kwds,
-) -> dp.Tree:
-    """
-    Load a tree from a file.
+class Tree(dp.Tree):
+    def plot_tree_msa(
+        self,
+        msa_plot_kwds: Optional[dict] = None,
+        axes: Optional[tuple[Axes, Axes]] = None,
+    ) -> tuple[Axes, Axes]:
+        """
+        Plot the tree and multiple sequence alignment.
+        """
+        msa_plot_kwds = {} if msa_plot_kwds is None else msa_plot_kwds
 
-    Args:
-        path: Path to file containing tree.
-        schema: See dendropy.Tree.get
-        outgroup: Name of taxon to use as outgroup.
-        msa_path: Path to fasta file containing leaf sequences.
-        kwds: Passed to add_sequences_to_tree
-    """
-    tree = dp.Tree.get(path=path, schema=schema)
+        if axes is None:
+            _, axes = plt.subplots(
+                ncols=2, figsize=(12, 4), gridspec_kw=dict(wspace=0.7)
+            )
 
-    if msa_path:
-        add_sequences_to_tree(tree, path=msa_path, **kwds)
+        plot_tree(self, ax=axes[0], fill_dotted_lines=True)
 
-    if outgroup is not None:
-        og = tree.find_node_with_taxon_label(outgroup)
-        tree.reroot_at_node(og)
+        self.multiple_sequence_alignment.plot(
+            variable_sites_kwds=msa_plot_kwds.get(
+                "variable_sites_kwds", dict(min_2nd_most_freq=2)
+            ),
+            rotate_xtick_labels=msa_plot_kwds.get("rotate_xtick_labels", True),
+            ax=axes[1],
+        )
 
-    tree.ladderize()
+        # Make the ylim of the tree align with the MSA plot
+        tree_ylim = axes[0].get_ylim()
+        axes[0].set_ylim(tree_ylim[0] + 0.5, tree_ylim[1] - 0.5)
 
-    return tree
+        axes[1].invert_yaxis()
+
+        return axes
+
+    @property
+    def multiple_sequence_alignment(self):
+        """
+        Generate an eremitalpa.MultipleSequence alignment object from a tree. Leaf nodes
+        on the tree must have 'sequence' attributes and taxon labels.
+        """
+        return MultipleSequenceAlignment(
+            [
+                SeqRecord(node.sequence, description=node.taxon.label)
+                for node in self.leaf_nodes()
+            ]
+        )
+
+    @classmethod
+    def from_disk(
+        cls,
+        path: str,
+        schema: str = "newick",
+        outgroup: Optional[str] = None,
+        msa_path: Optional[str] = None,
+        **kwds,
+    ) -> "Tree":
+        """
+        Load a tree from a file.
+
+        Args:
+            path: Path to file containing tree.
+            schema: See dendropy.Tree.get
+            outgroup: Name of taxon to use as outgroup.
+            msa_path: Path to fasta file containing leaf sequences.
+            kwds: Passed to add_sequences_to_tree
+        """
+        tree = cls.get(path=path, schema=schema)
+
+        if msa_path:
+            add_sequences_to_tree(tree, path=msa_path, **kwds)
+
+        if outgroup is not None:
+            og = tree.find_node_with_taxon_label(outgroup)
+            tree.reroot_at_node(og)
+
+        tree.ladderize()
+
+        return tree
 
 
 def compute_tree_layout(
@@ -99,37 +152,40 @@ def compute_tree_layout(
 
 
 def plot_tree(
-    tree,
-    has_brlens=True,
-    edge_kws=default_edge_kws,
-    leaf_kws=default_leaf_kws,
-    internal_kws=default_internal_kws,
-    ax=None,
-    labels=(),
-    label_kws=default_label_kws,
-    compute_layout=True,
-):
+    tree: dp.Tree,
+    has_brlens: bool = True,
+    edge_kws: dict = default_edge_kws,
+    leaf_kws: dict = default_leaf_kws,
+    internal_kws: dict = default_internal_kws,
+    ax: Axes = None,
+    labels: Optional[Union[Iterable[str], Literal["all"]]] = None,
+    label_kws: dict = default_label_kws,
+    compute_layout: bool = True,
+    fill_dotted_lines: bool = False,
+) -> Axes:
     """Plot a dendropy tree object.
 
     Tree nodes are plotted in their current order. So, to ladderize, call
     tree.ladderize() before plotting.
 
     Args:
-        tree (dendropy.Tree)
-        has_brlens (bool). Does the tree have branch lengths? If not, all
+        tree
+        has_brlens: Does the tree have branch lengths? If not, all
             branch lengths are plotted length 1.
-        edge_kws (dict). Keyword arguments for edges, passed to
+        edge_kws: Keyword arguments for edges, passed to
             matplotlib.collections.LineCollection
-        leaf_kws (dict). Keyword arguments for leafs, passed to ax.scatter.
+        leaf_kws: Keyword arguments for leafs, passed to ax.scatter.
             For arguments that can be a vector, the order and length should
             match tree.leaf_node_iter().
-        internal_kws (dict). Keyword arguments for internal nodes. Passed to
+        internal_kws: Keyword arguments for internal nodes. Passed to
             ax.scatter. For arguments that can be a vector, the order and
             length should match tree.internal_nodes().
-        ax (matplotlib.ax).
-        labels (iterable or 'all'). Names of taxa to add labels for.
-        compute_layout (bool). Compute the layout or not. If the tree nodes
+        ax
+        labels: Taxon labels to annotate, or "all".
+        compute_layout. Compute the layout or not. If the tree nodes
             already have _x and _y attributes, then just plot.
+        fill_dotted_lines: Show dotted lines from leaves to the right hand edge of the
+            tree.
 
     Returns:
         tuple containing (Tree, ax). The tree and matplotlib ax. The tree has
@@ -148,6 +204,8 @@ def plot_tree(
 
     if labels == "all":
         labels = [node.taxon.label for node in tree.leaf_nodes()]
+    elif labels is None:
+        labels = []
 
     label_kws = {**default_label_kws, **label_kws}
     leaf_kws = {**default_leaf_kws, **leaf_kws}
@@ -171,6 +229,17 @@ def plot_tree(
 
     lc = mp.collections.LineCollection(segments=edges, **edge_kws)
     ax.add_artist(lc)
+
+    if fill_dotted_lines:
+        max_x = max(node._x for node in tree.leaf_nodes())
+        dotted_edges = [
+            ((node._x, node._y), (max_x, node._y)) for node in tree.leaf_nodes()
+        ]
+        ax.add_artist(
+            mp.collections.LineCollection(
+                segments=dotted_edges, ls=(2, (1, 10)), color="black", linewidth=0.5
+            )
+        )
 
     # Draw leaves
     ax.scatter(
@@ -563,11 +632,11 @@ class MultipleSequenceAlignment(Align.MultipleSeqAlignment):
 
     def plot(
         self,
-        ax: Optional[mp.axes.Axes] = None,
+        ax: Optional[Axes] = None,
         fontsize: int = 6,
         variable_sites_kwds: Optional[dict] = None,
         rotate_xtick_labels: bool = False,
-    ) -> mp.axes.Axes:
+    ) -> Axes:
         """
         Plot variable sites in the alignment.
 
@@ -611,5 +680,8 @@ class MultipleSequenceAlignment(Align.MultipleSeqAlignment):
 
         if rotate_xtick_labels:
             ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=90)
+
+        for spine in "top", "bottom", "left", "right":
+            ax.spines[spine].set_visible(False)
 
         return ax
