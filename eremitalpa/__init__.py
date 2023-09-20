@@ -20,7 +20,6 @@ from .eremitalpa import (
     compute_tree_layout,
     deepest_leaf,
     get_trunk,
-    load_tree,
     plot_leaves_with_labels,
     plot_tree,
     prune_nodes_with_labels,
@@ -28,6 +27,7 @@ from .eremitalpa import (
     taxon_in_node_label,
     taxon_in_node_labels,
     MultipleSequenceAlignment,
+    Tree,
 )
 from .influenza import (
     aa_counts_thru_time,
@@ -92,7 +92,6 @@ __all__ = [
     "hamming_to_all_clusters",
     "hamming_to_cluster",
     "jupyter_code_cell_toggle",
-    "load_tree",
     "log_df_func",
     "pairwise_hamming_dists",
     "plot_leaves_with_labels",
@@ -115,4 +114,5 @@ __all__ = [
     "plot_aa_freq_thru_time",
     "find_substitutions",
     "MultipleSequenceAlignment",
+    "Tree",
 ]

@@ -45,10 +45,11 @@ class Tree(dp.Tree):
         plot_tree(self, ax=axes[0], fill_dotted_lines=True)
 
         self.multiple_sequence_alignment.plot(
-            variable_sites_kwds=msa_plot_kwds.get(
+            variable_sites_kwds=msa_plot_kwds.pop(
                 "variable_sites_kwds", dict(min_2nd_most_freq=2)
             ),
-            rotate_xtick_labels=msa_plot_kwds.get("rotate_xtick_labels", True),
+            rotate_xtick_labels=msa_plot_kwds.pop("rotate_xtick_labels", True),
+            **msa_plot_kwds,
             ax=axes[1],
         )
 
@@ -636,6 +637,7 @@ class MultipleSequenceAlignment(Align.MultipleSeqAlignment):
         fontsize: int = 6,
         variable_sites_kwds: Optional[dict] = None,
         rotate_xtick_labels: bool = False,
+        sites: Optional[Iterable[int]] = None,
     ) -> Axes:
         """
         Plot variable sites in the alignment.
@@ -645,11 +647,23 @@ class MultipleSequenceAlignment(Align.MultipleSeqAlignment):
             fontsize: Fontsize of the character labels.
             variable_sites_kwds: Passed to MultipleSequenceAlignment.variable_sites.
             rotate_xtick_labels: Rotate the xtick labels 90 degrees.
+            sites: Only plot these sites. (Note: Only variable sites are plotted, so if a
+                site is passed in this argument but it is not variable it will not be
+                displayed.)
         """
         ax = plt.gca() if ax is None else ax
         variable_sites_kwds = {} if variable_sites_kwds is None else variable_sites_kwds
 
         variable_sites = tuple(self.variable_sites(**variable_sites_kwds))
+
+        if len(variable_sites) == 0:
+            raise ValueError("No variable sites in alignment")
+
+        if sites is not None:
+            sites = set(sites)
+            variable_sites = tuple(
+                column for column in variable_sites if column.site in sites
+            )
 
         for x, site in enumerate(variable_sites):
             for y, aa in enumerate(site.aas):
