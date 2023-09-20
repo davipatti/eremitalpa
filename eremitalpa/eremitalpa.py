@@ -7,10 +7,11 @@ from typing import Optional, Generator
 from operator import attrgetter
 import warnings
 import dendropy as dp
-import matplotlib
+import matplotlib as mp
 import matplotlib.pyplot as plt
+import numpy as np
 from Bio import SeqIO, Align
-from matplotlib.collections import LineCollection
+from .bio import amino_acid_colors
 
 # Defaults
 default_edge_kws = dict(color="black", linewidth=0.5)
@@ -168,7 +169,7 @@ def plot_tree(
             miny = min(node._y for node in node.child_node_iter())
             edges.append(((node._x, maxy), (node._x, miny)))
 
-    lc = matplotlib.collections.LineCollection(segments=edges, **edge_kws)
+    lc = mp.collections.LineCollection(segments=edges, **edge_kws)
     ax.add_artist(lc)
 
     # Draw leaves
@@ -472,7 +473,7 @@ def compare_trees(
         if colors is not None:
             connect_kws["colors"] = colors
 
-        plt.gca().add_artist(LineCollection(segments, **connect_kws))
+        plt.gca().add_artist(mp.collections.LineCollection(segments, **connect_kws))
 
     # Extend branches horizontally from the left and right trees to meet the
     # cris-crossing lines
@@ -496,7 +497,7 @@ def compare_trees(
         if colors is not None:
             extend_kws["colors"] = colors
 
-        plt.gca().add_artist(LineCollection(segments, **extend_kws))
+        plt.gca().add_artist(mp.collections.LineCollection(segments, **extend_kws))
 
     plot_tree(left, compute_layout=False, **left_kws)
     plot_tree(right, compute_layout=False, **right_kws)
@@ -559,3 +560,56 @@ class MultipleSequenceAlignment(Align.MultipleSeqAlignment):
                 _, count = Counter(aas).most_common()[1]
                 if count >= min_2nd_most_freq:
                     yield Column(site, aas)
+
+    def plot(
+        self,
+        ax: Optional[mp.axes.Axes] = None,
+        fontsize: int = 6,
+        variable_sites_kwds: Optional[dict] = None,
+        rotate_xtick_labels: bool = False,
+    ) -> mp.axes.Axes:
+        """
+        Plot variable sites in the alignment.
+
+        Args:
+            ax: Matplotlib ax.
+            fontsize: Fontsize of the character labels.
+            variable_sites_kwds: Passed to MultipleSequenceAlignment.variable_sites.
+            rotate_xtick_labels: Rotate the xtick labels 90 degrees.
+        """
+        ax = plt.gca() if ax is None else ax
+        variable_sites_kwds = {} if variable_sites_kwds is None else variable_sites_kwds
+
+        variable_sites = tuple(self.variable_sites(**variable_sites_kwds))
+
+        for x, site in enumerate(variable_sites):
+            for y, aa in enumerate(site.aas):
+                rect = mp.patches.Rectangle(
+                    (x, y), width=1, height=1, facecolor=amino_acid_colors[aa]
+                )
+                ax.add_artist(rect)
+                ax.text(
+                    x + 0.5,
+                    y + 0.5,
+                    aa,
+                    ha="center",
+                    va="center",
+                    fontsize=fontsize,
+                    color="black" if aa.upper() in "M" else "white",
+                )
+
+        max_x = rect.xy[0]
+
+        ax.set(
+            xlim=(0, max_x + 1),
+            ylim=(0, len(self)),
+            yticks=np.arange(0.5, len(self) + 0.5),
+            yticklabels=[record.description for record in self],
+            xticks=np.arange(0.5, max_x + 1.5),
+            xticklabels=[column.site for column in variable_sites],
+        )
+
+        if rotate_xtick_labels:
+            ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=90)
+
+        return ax
