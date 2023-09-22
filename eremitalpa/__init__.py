@@ -12,10 +12,12 @@ from .bio import (
     hamming_dist,
     pairwise_hamming_dists,
     sloppy_translate,
+    variable_sites,
     Substitution,
     TiedCounter,
 )
 from .eremitalpa import (
+    load_fasta,
     compare_trees,
     compute_tree_layout,
     deepest_leaf,
@@ -46,6 +48,7 @@ from .influenza import (
     plot_aa_freq_thru_time,
     plot_tree_coloured_by_cluster,
     translate_trim_default_ha,
+    NHSeason,
 )
 from .flu_wider import b7, wider5, wider10, wider15
 from .lib import (
@@ -57,6 +60,7 @@ from .lib import (
     split_pairs,
     cal_months_diff,
 )
+from .spread_points import spread_points
 
 __version__ = "1.1.4"
 
@@ -90,6 +94,7 @@ __all__ = [
     "hamming_dist_lt",
     "hamming_dist",
     "hamming_to_all_clusters",
+    "NHSeason",
     "hamming_to_cluster",
     "jupyter_code_cell_toggle",
     "log_df_func",
@@ -102,6 +107,7 @@ __all__ = [
     "read_raxml_ancestral_sequences",
     "sloppy_translate",
     "Substitution",
+    "spread_points",
     "taxon_in_node_label",
     "taxon_in_node_labels",
     "translate_trim_default_ha",
@@ -115,4 +121,6 @@ __all__ = [
     "find_substitutions",
     "MultipleSequenceAlignment",
     "Tree",
+    "variable_sites",
+    "load_fasta",
 ]

@@ -945,3 +945,50 @@ def plot_aa_freq_thru_time(
         else xticks.astype(str).str.slice(0, 7),
     )
     ax.set_xlim(0, cal_months_diff(t_end, t0))
+
+class NHSeason:
+    def __init__(self, years: tuple[int, int]) -> None:
+        """
+        A northern hemisphere flu season.
+        """
+        for y in years:
+            if not isinstance(y, int):
+                raise ValueError("years should be integers")
+
+        self.y0, self.y1 = years
+
+        if self.y1 != self.y0 +1:
+            raise ValueError("years should be consecutive increasing integers")
+
+    def __repr__(self) -> str:
+        return f"NHSeason(({self.y0}, {self.y1}))"
+    
+    def __str__(self) -> str:
+        a = str(self.y0)
+        b = str(self.y1)
+        return f"{a[-2:]}-{b[-2:]}"
+    
+    def __gt__(self, other: "NHSeason") -> bool:
+        return self.y0 > other.y0
+    
+    def __lt__(self, other: "NHSeason") -> bool:
+        return self.y0 < other.y0
+    
+    def __eq__(self, other: "NHSeason") -> bool:
+        return self.y0 == other.y0
+    
+    def __le__(self, other: "NHSeason") -> bool:
+        return self.y0 <= other.y0
+
+    def __ge__(self, other: "NHSeason") -> bool:
+        return self.y0 >= other.y0
+
+    def __hash__(self) -> int:
+        return hash((self.y0, self.y1))
+    
+    @classmethod
+    def from_datetime(cls, dt):
+        if dt.month > 8:
+            return cls((dt.year, dt.year +1))
+        else:
+            return cls((dt.year - 1, dt.year))

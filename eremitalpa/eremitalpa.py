@@ -26,6 +26,14 @@ default_label_kws = dict(
 )
 
 
+def load_fasta(path: str) -> dict[str, str]:
+    """
+    Load fasta file sequences.
+    """
+    with open(path) as fobj:
+        return {record.description: str(record.seq) for record in SeqIO.parse(fobj, format="fasta")}
+
+
 class Tree(dp.Tree):
     def plot_tree_msa(
         self,

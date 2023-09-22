@@ -4,6 +4,8 @@ from collections import Counter
 from itertools import combinations, groupby
 import warnings
 
+import pandas as pd
+
 _T = TypeVar("_T")
 
 from tqdm import tqdm
@@ -403,3 +405,28 @@ def consensus_seq(seqs: Iterable[str], case_sensitive: bool = True, **kwds) -> s
     """
     seqs = tuple(seq.lower() for seq in seqs) if not case_sensitive else tuple(seqs)
     return "".join(_generate_consensus_chars(seqs, **kwds))
+
+def variable_sites(
+    seq: pd.Series, max_biggest_prop: float = 0.95, ignore: str = "-X"
+) -> Generator[int, None, None]:
+    """
+    Find variable sites among sequences. Returns 1-indexed sites.
+
+    Args:
+        seq: Sequences.
+        max_biggest_prop: Don't include sites where a single character has a proportion
+            above this.
+        ignore: Characters to exclude when calculating proportions.
+    """
+    ignore = set(ignore)
+    df = seq.str.split("", expand=True)
+    for site in df.columns[1:-1]:
+        vc = (
+            df[site]
+            .value_counts()
+            .drop(index=ignore, errors="ignore")
+            .sort_values()
+        )
+        biggest_prop = vc.max() / vc.sum()
+        if biggest_prop < max_biggest_prop:
+            yield site

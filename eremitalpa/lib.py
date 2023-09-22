@@ -123,24 +123,26 @@ def find_runs(arr: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         return values, starts, lengths
 
 
-def split_pairs(values: Iterable) -> list:
+def split_pairs(values: Iterable, separation: float=1.0) -> list:
     """
     If values are repeated, e.g.:
 
         1, 5, 5, 8
 
-    Then 'split' them by adding and subtracting 0.5 from each item in the pair:
+    Then 'split' them by adding and subtracting half of `separation` (default=1.0 -> 0.5)
+    from each item in the pair:
 
         1, 4.5, 5.5, 8
     """
     values = list(values)
     counts = Counter(values)
+    half_separation = separation / 2
     for value, count in counts.items():
         if count == 2:
             i = values.index(value)  # index first occurance
             j = values.index(value, i + 1)  # index second occurance
-            values[i] -= 0.5
-            values[j] += 0.5
+            values[i] -= half_separation
+            values[j] += half_separation
         elif count != 1:
             raise NotImplementedError(
                 f"{value} occurs {count} times, only implemented pairs"
