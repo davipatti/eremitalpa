@@ -117,7 +117,10 @@ class Tree(dp.Tree):
             og = tree.find_node_with_taxon_label(outgroup)
             tree.reroot_at_node(og)
 
-        tree.ladderize(default_order=True)
+        try:
+            tree.ladderize(default_order=True)
+        except TypeError:
+            tree.ladderize()
 
         return tree
 
