@@ -1,31 +1,89 @@
 #!/usr/bin/env python3
+
 import argparse
 
-import dendropy
 import matplotlib.pyplot as plt
+import pandas as pd
 
 import eremitalpa as ere
 
 parser = argparse.ArgumentParser(description="Plot a labelled phylogeny")
 parser.add_argument("-t", "--tree", help="Path to newick tree")
 parser.add_argument("--filename", help="Path of filename to save")
+parser.add_argument(
+    "--metadata",
+    help="Tab delimited metadata. First column must be node labels used in treefile. "
+    "First row must be names of each column.",
+    required=False,
+)
+parser.add_argument(
+    "--leaf_labels", help="Column in metadata to use as tip labels.", required=False
+)
+parser.add_argument(
+    "--append_original_labels",
+    help="Append the original label in the tree to the labels when using --leaf_labels. "
+    "Sometimes it's useful to keep the ID in the tree.",
+    action="store_true",
+)
+parser.add_argument(
+    "--leaf_colors",
+    help="Column in metadata to use as colors. --leaf_size must be non zero to show "
+    "leaves.",
+    required=False,
+)
+parser.add_argument(
+    "--leaf_size",
+    help="Size of circles drawn on leaves. [Default=0].",
+    required=False,
+    type=int,
+    default=0,
+)
 args = parser.parse_args()
-tree = dendropy.Tree.get(path=args.tree, schema="newick")
+
+tree = ere.Tree.from_disk(
+    path=args.tree, schema="newick", get_kwds=dict(preserve_underscores=True)
+)
 tree.ladderize()
+
+if args.leaf_labels and not args.metadata:
+    raise ValueError("Must pass metadata")
+
+
+if args.metadata:
+    df = pd.read_table(args.metadata, sep="\t", index_col=0)
+    leaves = [leaf.taxon.label for leaf in tree.leaf_nodes()]
+else:
+    df = None
+
+if df is not None and args.leaf_labels:
+    leaf_labels = (
+        df.loc[leaves, args.leaf_labels]
+        if df is not None and args.leaf_labels
+        else True
+    )
+    if args.append_original_labels:
+        leaf_labels = [f"{a} {b}" for a, b in zip(leaf_labels, leaves)]
+else:
+    leaf_labels = True  # Just shows original labels
+
+
+leaf_colors = (
+    df.loc[leaves, args.leaf_colors] if df is not None and args.leaf_colors else "black"
+)
+
 
 # Compute a good figure size
 tree = ere.compute_tree_layout(tree)
-n_leaves = len(tree.leaf_nodes())
-height = n_leaves / 50.0
+height = len(tree.leaf_nodes()) / 25
 width = 10
 
 # Plot
 fig, ax = plt.subplots(figsize=(width, height))
 ere.plot_tree(
     tree,
-    labels=True,
-    label_kws=dict(fontsize=1),
-    leaf_kws=dict(s=0),
+    labels=leaf_labels,
+    label_kws=dict(fontsize=2),
+    leaf_kws=dict(s=args.leaf_size, c=leaf_colors),
     compute_layout=False,
 )
 filename = f"{args.tree}.pdf" if not args.filename else args.filename
