@@ -18,7 +18,7 @@ from .bio import amino_acid_colors
 Axes = mp.axes.Axes
 
 # Defaults
-default_edge_kws = dict(color="black", linewidth=0.5, clip_on=False)
+default_edge_kws = dict(color="black", linewidth=0.5, clip_on=False, capstyle="round")
 default_leaf_kws = dict(s=0)
 default_internal_kws = dict()
 default_label_kws = dict(
@@ -31,7 +31,10 @@ def load_fasta(path: str) -> dict[str, str]:
     Load fasta file sequences.
     """
     with open(path) as fobj:
-        return {record.description: str(record.seq) for record in SeqIO.parse(fobj, format="fasta")}
+        return {
+            record.description: str(record.seq)
+            for record in SeqIO.parse(fobj, format="fasta")
+        }
 
 
 class Tree(dp.Tree):
@@ -89,6 +92,7 @@ class Tree(dp.Tree):
         schema: str = "newick",
         outgroup: Optional[str] = None,
         msa_path: Optional[str] = None,
+        get_kwds: Optional[dict] = None,
         **kwds,
     ) -> "Tree":
         """
@@ -99,9 +103,12 @@ class Tree(dp.Tree):
             schema: See dendropy.Tree.get
             outgroup: Name of taxon to use as outgroup.
             msa_path: Path to fasta file containing leaf sequences.
+            get_kwds: Passed to dendropy.Tree.get.
             kwds: Passed to add_sequences_to_tree
         """
-        tree = cls.get(path=path, schema=schema)
+        get_kwds = {} if get_kwds is None else get_kwds
+
+        tree = cls.get(path=path, schema=schema, **get_kwds)
 
         if msa_path:
             add_sequences_to_tree(tree, path=msa_path, **kwds)
@@ -110,7 +117,7 @@ class Tree(dp.Tree):
             og = tree.find_node_with_taxon_label(outgroup)
             tree.reroot_at_node(og)
 
-        tree.ladderize()
+        tree.ladderize(default_order=True)
 
         return tree
 
@@ -186,6 +193,7 @@ def plot_tree(
         leaf_kws: Keyword arguments for leafs, passed to ax.scatter.
             For arguments that can be a vector, the order and length should
             match tree.leaf_node_iter().
+        label_kwds:
         internal_kws: Keyword arguments for internal nodes. Passed to
             ax.scatter. For arguments that can be a vector, the order and
             length should match tree.internal_nodes().
@@ -211,7 +219,7 @@ def plot_tree(
     """
     ax = plt.gca() if ax is None else ax
 
-    if labels == "all":
+    if isinstance(labels, str) and labels == "all":
         labels = [node.taxon.label for node in tree.leaf_nodes()]
     elif labels is None:
         labels = []
@@ -272,14 +280,43 @@ def plot_tree(
     try:
         iter(labels)
     except TypeError:
+
+        # Labels is True but not iterable - label all leaf nodes
         if labels:
             for node in tree.leaf_node_iter():
                 plt.text(node._x, node._y, node.taxon.label, **label_kws)
         else:
             pass
     else:
-        for node in tree.find_nodes(lambda n: taxon_in_node_labels(labels, n)):
-            plt.text(node._x, node._y, node.taxon.label, **label_kws)
+
+        # If all nodes are passed, plot all their labels
+        if all(isinstance(item, dp.Node) for item in labels):
+            for node in labels:
+                plt.text(node._x, node._y, node.taxon.label, **label_kws)
+
+        elif all(isinstance(item, str) for item in labels):
+
+            # If all strings are passed, and there is one per leaf, plot each on a leaf
+            if len(labels) == len(tree.leaf_nodes()):
+                for node, label in zip(tree.leaf_node_iter(), labels):
+                    plt.text(node._x, node._y, label, **label_kws)
+
+            # If all strings are passed, and there are fewer than one per leaf, find
+            # the nodes that have these taxon labels and label them
+            elif len(labels) < len(tree.leaf_nodes()):
+                for node in tree.find_nodes(lambda n: taxon_in_node_labels(labels, n)):
+                    plt.text(
+                        node._x,
+                        node._y,
+                        node.taxon.label,
+                        **label_kws,
+                    )
+
+            else:
+                raise ValueError("passed more labels than number of leaf nodes")
+
+        else:
+            raise ValueError("labels must be instances of dp.Node or str")
 
     # Finalise
     ax.set_xlim(tree._xlim)
@@ -495,6 +532,7 @@ def compare_trees(
     left,
     right,
     gap=0.1,
+    x0=0,
     connect_kws=dict(),
     extend_kws=dict(),
     extend_every=10,
@@ -509,6 +547,7 @@ def compare_trees(
         left (dendropy Tree)
         right (dendropy Tree)
         gap (float): Space between the two trees.
+        x0 (float): The x coordinate of the root of the left hand tree.
         connect_kws (dict): Keywords passed to matplotlib LineCollection.
             These are used for the lines that connect matching taxa.
         extend_kws (dict): Keywords passed to matplotlib LineCollection.
@@ -516,8 +555,10 @@ def compare_trees(
         extend_every (n): Draw branch extension lines every n leaves.
         left_kws (dict): Passed to plot_tree for the left tree.
         right_kws (dict): Passed to plot_tree for the right tree.
-        connect_colors (dict): Maps taxon labels to colors. Ignored if 'colors'
-            is used in connect_kws.
+        connect_colors (dict or Callable): Maps taxon labels to colors. Ignored if
+            'colors' is used in connect_kws.
+        extend_colors (dict or Callable): Maps taxon labels to colors. Ignored if
+            'colors' is used in extend_kws.
 
     Returns:
         (2-tuple) containing dendropy Trees with _x and _y plot locations on
@@ -527,10 +568,14 @@ def compare_trees(
     right = compute_tree_layout(right)
 
     # Reflect the right tree
-    constant = left._xlim[1] + right._xlim[1] + gap
+    constant = left._xlim[1] + right._xlim[1] + gap + x0
     for node in right.nodes():
         node._x *= -1
         node._x += constant
+
+    # # Move the left tree by x0
+    for node in left.nodes():
+        node._x += x0
 
     # Cris-crossing lines that connect matching taxa in left and right
     if connect_kws:
@@ -542,11 +587,18 @@ def compare_trees(
 
             if other:
                 segments.append(
-                    ((left._xlim[1], node._y), (left._xlim[1] + gap, other._y))
+                    (
+                        (left._xlim[1] + x0, node._y),
+                        (left._xlim[1] + x0 + gap, other._y),
+                    )
                 )
 
                 if colors is not None:
-                    colors.append(connect_colors[node.taxon.label])
+                    try:
+                        c = connect_colors[node.taxon.label]
+                    except TypeError:
+                        c = connect_colors(node.taxon.label)
+                    colors.append(c)
 
         if colors is not None:
             connect_kws["colors"] = colors
@@ -561,16 +613,24 @@ def compare_trees(
         key = attrgetter("_y")
 
         for node in sorted(left.leaf_node_iter(), key=key)[::extend_every]:
-            segments.append(((node._x, node._y), (left._xlim[1], node._y)))
+            segments.append(((node._x, node._y), (left._xlim[1] + x0, node._y)))
 
             if colors is not None:
-                colors.append(extend_colors[node.taxon.label])
+                try:
+                    c = extend_colors[node.taxon.label]
+                except TypeError:
+                    c = extend_colors(node.taxon.label)
+                colors.append(c)
 
         for node in sorted(right.leaf_node_iter(), key=key)[::extend_every]:
-            segments.append(((left._xlim[1] + gap, node._y), (node._x, node._y)))
+            segments.append(((left._xlim[1] + x0 + gap, node._y), (node._x, node._y)))
 
             if colors is not None:
-                colors.append(extend_colors[node.taxon.label])
+                try:
+                    c = extend_colors[node.taxon.label]
+                except TypeError:
+                    c = extend_colors(node.taxon.label)
+                colors.append(c)
 
         if colors is not None:
             extend_kws["colors"] = colors
@@ -580,7 +640,7 @@ def compare_trees(
     plot_tree(left, compute_layout=False, **left_kws)
     plot_tree(right, compute_layout=False, **right_kws)
 
-    plt.xlim(0, constant)
+    # plt.xlim(0, constant)
 
     return left, right
 
