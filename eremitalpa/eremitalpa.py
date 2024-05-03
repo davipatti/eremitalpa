@@ -196,11 +196,11 @@ def plot_tree(
         leaf_kws: Keyword arguments for leafs, passed to ax.scatter.
             For arguments that can be a vector, the order and length should
             match tree.leaf_node_iter().
-        label_kwds:
+        label_kwds: Passed to plt.text.
         internal_kws: Keyword arguments for internal nodes. Passed to
             ax.scatter. For arguments that can be a vector, the order and
             length should match tree.internal_nodes().
-        ax
+        ax: Matplotlib ax.
         labels: Taxon labels to annotate, or "all".
         compute_layout. Compute the layout or not. If the tree nodes
             already have _x and _y attributes, then just plot.
