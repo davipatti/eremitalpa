@@ -5,18 +5,18 @@ Plot dendropy trees.
 #### Installation
 
 Dependencies
+
 - [matplotlib](https://matplotlib.org/)
 - [dendropy](https://dendropy.org/)
 
 ```bash
-pip3 install git+https://github.com/davipatti/eremitalpa.git
+pip3 install git+https://github.com/IRI-UW-Bioinformatics/eremitalpa.git
 ```
 
 #### Basic usage:
 
 ```python
-import dendropy
-import eremitalpa
-tree = dendropy.Tree.get("tree.tre", schema="newick")
-eremitalpa.plot_dendropy_tree(tree)
+import eremitalpa as ere
+tree = ere.Tree.from_disk("tree.tre")
+ere.plot_dendropy_tree(tree)
 ```
