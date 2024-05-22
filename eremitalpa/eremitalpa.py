@@ -3,7 +3,7 @@ Drawing phylogenetic trees (dendropy.Tree instances) using matplotlib.
 """
 
 from collections import namedtuple, Counter
-from typing import Optional, Generator, Iterable, Union, Literal
+from typing import Optional, Generator, Iterable, Union, Literal, Any
 from operator import attrgetter
 import warnings
 import dendropy as dp
@@ -265,6 +265,7 @@ def plot_tree(
     ax.scatter(
         tuple(node._x for node in tree.leaf_node_iter()),
         tuple(node._y for node in tree.leaf_node_iter()),
+        marker=[[-2, -1], [-2, 1], [0, 1], [0, -1]],
         **leaf_kws,
     )
 
@@ -287,7 +288,7 @@ def plot_tree(
         # Labels is True but not iterable - label all leaf nodes
         if labels:
             for node in tree.leaf_node_iter():
-                plt.text(node._x, node._y, node.taxon.label, **label_kws)
+                ax.text(node._x, node._y, node.taxon.label, **label_kws)
         else:
             pass
     else:
@@ -295,20 +296,20 @@ def plot_tree(
         # If all nodes are passed, plot all their labels
         if all(isinstance(item, dp.Node) for item in labels):
             for node in labels:
-                plt.text(node._x, node._y, node.taxon.label, **label_kws)
+                ax.text(node._x, node._y, node.taxon.label, **label_kws)
 
         elif all(isinstance(item, str) for item in labels):
 
             # If all strings are passed, and there is one per leaf, plot each on a leaf
             if len(labels) == len(tree.leaf_nodes()):
                 for node, label in zip(tree.leaf_node_iter(), labels):
-                    plt.text(node._x, node._y, label, **label_kws)
+                    ax.text(node._x, node._y, label, **label_kws)
 
             # If all strings are passed, and there are fewer than one per leaf, find
             # the nodes that have these taxon labels and label them
             elif len(labels) < len(tree.leaf_nodes()):
                 for node in tree.find_nodes(lambda n: taxon_in_node_labels(labels, n)):
-                    plt.text(
+                    ax.text(
                         node._x,
                         node._y,
                         node.taxon.label,
@@ -496,7 +497,6 @@ def add_sequences_to_tree(
     path: str,
     labeller: Optional[callable] = None,
     seqformatter: Optional[callable] = None,
-    attr_name: str = "sequence",
 ) -> None:
     """
     Add sequences to leaves inplace.
@@ -770,3 +770,52 @@ class MultipleSequenceAlignment(Align.MultipleSeqAlignment):
             ax.spines[spine].set_visible(False)
 
         return ax
+
+
+def color_stack(
+    tree: Tree,
+    values: dict[str, Any],
+    color_dict: dict[str, str],
+    default_color: Optional = None,
+    x: float = 0,
+    ax: Optional[mp.axes.Axes] = None,
+    leg_kwds: Optional[dict] = None,
+) -> tuple[mp.axes.Axes, mp.legend.Legend]:
+    """
+    A stack of colored patches that can be plotted adjacent to a tree to show how values
+    vary on the tree leaves.
+
+    Must have called eremitalpa.compute_layout on the tree in order to know y values for
+    leaves (done anyway by eremitalpa.plot_tree).
+
+    Args:
+        tree: The tree to be plotted next to.
+        values: Maps taxon labels to values to be plotted.
+        color_dict: Maps values to colors.
+        default_color: Color to use for values missing from color_dict.
+        x: The x value to plot the stack at.
+        ax: Matplotlib ax
+    """
+    ax = ax or plt.gca()
+    leg_kwds = leg_kwds or dict()
+
+    labels = [leaf.taxon.label for leaf in tree.leaf_nodes()]
+
+    y = [leaf._y for leaf in tree.leaf_nodes()]
+
+    c = [color_dict.get(values[label], default_color) for label in labels]
+
+    for _y, _c in zip(y, c):
+        ax.add_patch(
+            mp.patches.Rectangle(
+                (x, _y - 0.5), width=1, height=1, color=_c, linewidth=0
+            )
+        )
+
+    # Patches off the ax for easy legend
+    handles_labels = [(mp.patches.Patch(color=v), k) for k, v in color_dict.items()]
+    handles, labels = zip(*handles_labels)
+    leg = ax.legend(handles, labels, **leg_kwds)
+    ax.add_artist(leg)
+    ax.axis(False)
+    return ax, leg
