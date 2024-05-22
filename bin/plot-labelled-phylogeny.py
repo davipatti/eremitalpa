@@ -55,6 +55,7 @@ if args.metadata:
 else:
     df = None
 
+# Labels
 if df is not None and args.leaf_labels:
     leaf_labels = (
         df.loc[leaves, args.leaf_labels]
@@ -63,9 +64,12 @@ if df is not None and args.leaf_labels:
     )
     if args.append_original_labels:
         leaf_labels = [f"{a} {b}" for a, b in zip(leaf_labels, leaves)]
+
+    # Padding before label (space char easier than finding a suitable distance to move
+    # text anchor for trees with different scales)
+    leaf_labels = [f" {label}" for label in leaf_labels]
 else:
     leaf_labels = True  # Just shows original labels
-
 
 leaf_colors = (
     df.loc[leaves, args.leaf_colors] if df is not None and args.leaf_colors else "black"
