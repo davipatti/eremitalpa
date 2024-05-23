@@ -3,8 +3,9 @@ Drawing phylogenetic trees (dendropy.Tree instances) using matplotlib.
 """
 
 from collections import namedtuple, Counter
+import itertools
 from typing import Optional, Generator, Iterable, Union, Literal, Any
-from operator import attrgetter
+from operator import attrgetter, itemgetter
 import warnings
 import dendropy as dp
 import matplotlib as mp
@@ -801,14 +802,25 @@ def color_stack(
 
     labels = [leaf.taxon.label for leaf in tree.leaf_nodes()]
 
-    y = [leaf._y for leaf in tree.leaf_nodes()]
+    leaf_ys = [leaf._y for leaf in tree.leaf_nodes()]
 
-    c = [color_dict.get(values[label], default_color) for label in labels]
+    colors = [color_dict.get(values[label], default_color) for label in labels]
 
-    for _y, _c in zip(y, c):
+    # Group color and leaf y values by batches of the same color in order to make a
+    # single larger patch if consecutive patches would be the same color.
+    for _, grouped in itertools.groupby(zip(colors, leaf_ys), key=itemgetter(0)):
+
+        # color will all be the same (it is what is being grouped by)
+        # leaf_y will be the y values of each leaf in this group
+        color, leaf_y = zip(*grouped)
+
         ax.add_patch(
             mp.patches.Rectangle(
-                (x, _y - 0.5), width=1, height=1, color=_c, linewidth=0
+                (x, leaf_y[0] - 0.5),  # bottom of the patch is the first y value
+                width=1,
+                height=len(color),  # height of the patch is just the size of the group
+                color=color[0],
+                linewidth=0,
             )
         )
 
