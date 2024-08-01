@@ -2,7 +2,7 @@
 
 Plot dendropy trees.
 
-#### Installation
+## Installation
 
 Dependencies
 
@@ -10,10 +10,10 @@ Dependencies
 - [dendropy](https://dendropy.org/)
 
 ```bash
-pip3 install git+https://github.com/IRI-UW-Bioinformatics/eremitalpa.git
+pip3 install git+https://github.com/davipatti/eremitalpa.git
 ```
 
-#### Basic usage:
+## Basic usage:
 
 ```python
 import eremitalpa as ere
