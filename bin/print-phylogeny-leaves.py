@@ -1,12 +1,34 @@
 #!/usr/bin/env python3
-import dendropy
+
 import argparse
+from functools import reduce
+
+import dendropy as dp
 
 parser = argparse.ArgumentParser(
-    description="Print labels of leaves in a newick tree to stdout"
+    description="Print taxon labels in a newick tree. Passing multiple trees prints "
+    "either the union (default) or the intersection of their taxon sets."
 )
-parser.add_argument("--newick", help="Path to newick tree")
+parser.add_argument("newick", help="Path to newick tree(s)", nargs="+")
+parser.add_argument(
+    "--intersection",
+    help="Show the intersection of taxon sets.",
+    default=set.union,
+    dest="operate",
+    action="store_const",
+    const=set.intersection,
+)
 args = parser.parse_args()
-tree = dendropy.Tree.get(path=args.newick, schema="newick")
-for leaf in tree.leaf_node_iter():
-    print(leaf.taxon.label)
+
+trees = (
+    dp.Tree.get(path=path, schema="newick", preserve_underscores=True)
+    for path in args.newick
+)
+
+taxon_labels = reduce(
+    args.operate,
+    (set(leaf.taxon.label for leaf in tree.leaf_node_iter()) for tree in trees),
+)
+
+for label in sorted(taxon_labels):
+    print(label)
