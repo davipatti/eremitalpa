@@ -38,10 +38,17 @@ parser.add_argument(
     type=int,
     default=0,
 )
+parser.add_argument("--outgroup", required=False, default=None)
+parser.add_argument("--width", required=False, default=None)
+parser.add_argument("--height", required=False, default=None)
+parser.add_argument("--fontsize", required=False, default=None)
 args = parser.parse_args()
 
 tree = ere.Tree.from_disk(
-    path=args.tree, schema="newick", get_kwds=dict(preserve_underscores=True)
+    path=args.tree,
+    schema="newick",
+    get_kwds=dict(preserve_underscores=True),
+    outgroup=args.outgroup,
 )
 tree.ladderize()
 
@@ -75,18 +82,16 @@ leaf_colors = (
     df.loc[leaves, args.leaf_colors] if df is not None and args.leaf_colors else "black"
 )
 
-
-# Compute a good figure size
 tree = ere.compute_tree_layout(tree)
-height = len(tree.leaf_nodes()) / 25
-width = 10
+height = len(tree.leaf_nodes()) / 25 if args.height is None else int(args.height)
+width = 10 if args.width is None else int(args.width)
 
 # Plot
 fig, ax = plt.subplots(figsize=(width, height))
 ere.plot_tree(
     tree,
     labels=leaf_labels,
-    label_kws=dict(fontsize=2),
+    label_kws=dict(fontsize=2 if args.fontsize is None else int(args.fontsize)),
     leaf_kws=dict(s=args.leaf_size, c=leaf_colors),
     compute_layout=False,
 )

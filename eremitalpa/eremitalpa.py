@@ -267,6 +267,7 @@ def plot_tree(
         tuple(node._x for node in tree.leaf_node_iter()),
         tuple(node._y for node in tree.leaf_node_iter()),
         marker=[[-2, -1], [-2, 1], [0, 1], [0, -1]],
+        clip_on=False,
         **leaf_kws,
     )
 

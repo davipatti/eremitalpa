@@ -123,7 +123,7 @@ def find_runs(arr: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         return values, starts, lengths
 
 
-def split_pairs(values: Iterable, separation: float=1.0) -> list:
+def split_pairs(values: Iterable, separation: float = 1.0) -> list:
     """
     If values are repeated, e.g.:
 
@@ -139,8 +139,8 @@ def split_pairs(values: Iterable, separation: float=1.0) -> list:
     half_separation = separation / 2
     for value, count in counts.items():
         if count == 2:
-            i = values.index(value)  # index first occurance
-            j = values.index(value, i + 1)  # index second occurance
+            i = values.index(value)  # index first occurrence
+            j = values.index(value, i + 1)  # index second occurrence
             values[i] -= half_separation
             values[j] += half_separation
         elif count != 1:
