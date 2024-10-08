@@ -660,15 +660,19 @@ def plot_tree_coloured_by_cluster(
         **kws: Keyword arguments passed to plot_tree.
     """
     leaf_color = [
-        cluster_colors[l.cluster]
-        if hasattr(l, "cluster") and l.cluster in cluster_colors
-        else unknown_color
+        (
+            cluster_colors[l.cluster]
+            if hasattr(l, "cluster") and l.cluster in cluster_colors
+            else unknown_color
+        )
         for l in tree.leaf_node_iter()
     ]
     internal_color = [
-        cluster_colors[n.cluster]
-        if hasattr(n, "cluster") and n.cluster in cluster_colors
-        else unknown_color
+        (
+            cluster_colors[n.cluster]
+            if hasattr(n, "cluster") and n.cluster in cluster_colors
+            else unknown_color
+        )
         for n in tree.internal_nodes()
     ]
 
@@ -892,10 +896,10 @@ def aa_counts_thru_time(df_seq: pd.DataFrame, site: int, ignore="-X") -> pd.Data
         pd.DataFrame(
             {
                 month: df_grp["aa"].str[site - 1].value_counts().sort_index()
-                for (month, df_grp) in df_seq.groupby(pd.Grouper(key="dt", freq="M"))
+                for (month, df_grp) in df_seq.groupby(pd.Grouper(key="dt", freq="ME"))
             }
         )
-        .T.resample("M")  # Make sure we're not missing any months
+        .T.resample("ME")  # Make sure we're not missing any months
         .asfreq()
         .fillna(0)
         .T
@@ -940,9 +944,11 @@ def plot_aa_freq_thru_time(
 
     ax.set_xticks(
         [cal_months_diff(x, t0) for x in xticks],
-        labels=["" for _ in xticks]
-        if blank_xtick_labels
-        else xticks.astype(str).str.slice(0, 7),
+        labels=(
+            ["" for _ in xticks]
+            if blank_xtick_labels
+            else xticks.astype(str).str.slice(0, 7)
+        ),
     )
     ax.set_xlim(0, cal_months_diff(t_end, t0))
 
