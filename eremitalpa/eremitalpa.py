@@ -367,7 +367,7 @@ def plot_subs_on_tree(
     arrow_facecolor: str = "black",
     fontsize: float = 6,
     **kwds,
-):
+) -> Counter:
     """
     Plot substitutions on a tree. This function plots substitutions on the tree by finding
     substitutions between each node and its parent node. The substitutions are then plotted at the
@@ -385,8 +385,13 @@ def plot_subs_on_tree(
         arrow_facecolor (str): The facecolor of the arrow pointing to the mutation.
         fontsize (float): The fontsize of the text.
         **kwds: Other keyword arguments to pass to plt.annotate.
+
+    Returns:
+        Counter containing the number of times each substitution appears in the tree.
     """
     ignore = set(ignore_chars)
+
+    sub_counts = Counter()
 
     for node in tree.nodes():
         if (parent := node.parent_node) and not (exclude_leaves and node.is_leaf()):
@@ -405,6 +410,8 @@ def plot_subs_on_tree(
 
             if len(subs) == 0:
                 continue
+
+            sub_counts.update(subs)
 
             x = (node._x + parent._x) / 2
 
@@ -426,6 +433,8 @@ def plot_subs_on_tree(
                 fontsize=fontsize,
                 **kwds,
             )
+
+    return sub_counts
 
 
 def get_label(node: dp.Node):
