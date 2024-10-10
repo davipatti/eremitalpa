@@ -3,6 +3,7 @@
 import unittest
 from functools import reduce
 from operator import add
+from pathlib import Path
 
 import eremitalpa as ere
 
@@ -341,6 +342,40 @@ class TestClusterTransition(unittest.TestCase):
         """
         ct = ere.ClusterTransition.from_tuple(("HK68", "EN72"))
         self.assertIsInstance(ct, ere.ClusterTransition)
+
+
+class TestTranslateSegment(unittest.TestCase):
+    """Tests for eremitalpa.influenza.translate_segment"""
+
+    segments = "PB2", "PB1", "PA", "HA", "NP", "NA", "MP", "NS"
+
+    @classmethod
+    def setUpClass(cls):
+        root_dir = Path(ere.__file__).parent.parent
+        test_data_dir = root_dir.joinpath("data", "flu", "a_tx37_2024")
+        cls.nt_seqs = {
+            segment: ere.load_fasta(test_data_dir.joinpath(f"{segment}.fasta"))[
+                "EPI_ISL_19027114"
+            ]
+            for segment in cls.segments
+        }
+
+    def test(self):
+        """Test calling translate_segment on each segment."""
+        for segment in self.segments:
+            with self.subTest(segment=segment):
+                ere.translate_segment(self.nt_seqs[segment], segment)
+
+    def test_single_stop_at_end(self):
+        """Test that there is a single stop codon at the end of each protein."""
+        for segment in self.segments:
+            proteins = ere.translate_segment(self.nt_seqs[segment], segment)
+            for protein, aa_seq in proteins.items():
+                with self.subTest(segment=segment, protein=protein):
+                    self.assertEqual(aa_seq[-1], "*")
+                    if segment != "MP":
+                        # Exclude MP which does have an internal stop codon at nt site 757-759
+                        self.assertEqual(aa_seq.count("*"), 1)
 
 
 if __name__ == "__main__":

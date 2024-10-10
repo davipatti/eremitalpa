@@ -1,3 +1,4 @@
+from functools import partial
 from pathlib import Path
 from typing import Union, Iterable, Generator
 import json
@@ -1000,3 +1001,263 @@ class NHSeason:
 
     def __getitem__(self, item) -> int:
         return self.years[item]
+
+
+def splice(
+    sequence: str, start_ends: tuple[tuple[int, int], ...], translate: bool = True
+) -> str:
+    """Splice a sequence.
+
+    Args:
+        start_ends: Contains 2-tuples that define the start and end of coding sequences. Values are
+            1-indexed, and inclusive. E.g. passing (2, 4) for the sequence 'ACTGT' would return
+            'CTG'.
+    """
+    spliced = "".join(sequence[start - 1 : end] for (start, end) in start_ends)
+    return sloppy_translate(spliced) if translate else spliced
+
+
+def translate_segment(sequence: str, segment: str) -> dict[str, str]:
+    """
+    Transcribe an influenza A segment. MP, PA, PB1 and NS all have splice variants, so simply
+    transcribing the ORF of the segment would miss out proteins. This function returns a list
+    containing coding sequences that are transcribed from a particular segment.
+
+    Args:
+        sequence (str): The RNA sequence of the segment.
+        segment (str): The segment to translate. Must be one of 'HA', 'NA', 'NP', 'PB2', 'PA', 'MP' or 'PB1'.
+
+    Returns:
+        dict[str, str]: A dictionary mapping the segment name to the translated protein sequence.
+    """
+    splice_translate = partial(splice, sequence=sequence, translate=True)
+
+    if segment == "PA":
+        if len(sequence) != 2151:
+            raise ValueError("expected PA to be 2151 nts")
+
+        return {
+            "PA": splice_translate(start_ends=((1, None),)),
+            "PA-X": splice_translate(start_ends=((1, 570), (572, 760))),
+        }
+
+    elif segment == "MP":
+        if len(sequence) != 982:
+            raise ValueError("expected MP to be 982 nts")
+
+        return {
+            "M1": splice_translate(start_ends=((1, 819),)),
+            "M2": splice_translate(start_ends=((1, 26), (715, None))),
+        }
+
+    elif segment == "PB1":
+        if len(sequence) != 2274:
+            raise ValueError("expected PB1 to be 2274 nts")
+
+        return {
+            "PB1": splice_translate(start_ends=((1, None),)),
+            "PB1-F2": splice_translate(start_ends=((95, 367),)),
+        }
+
+    elif segment == "NS":
+        return {
+            "NS1": splice_translate(start_ends=ns1_splice_sites(sequence)),
+            "NS2": splice_translate(start_ends=ns2_splice_sites(sequence)),
+        }
+
+    else:
+        # For these remaining segments, just translate the full sequence.
+        if segment not in {"HA", "NA", "NP", "PB2"}:
+            raise ValueError(
+                "segment must be one of 'HA', 'NA', 'NP', 'PB2', 'PB2', 'PA', 'MP' or 'PB1'."
+            )
+
+        return {segment: sloppy_translate(sequence)}
+
+
+def ns1_splice_sites(sequence) -> tuple[tuple[int, int]]:
+    """
+    Return the start and end positions of the NS1 gene in a given sequence.
+
+    Given the sequence, find the splice donor and acceptor sites, and then return
+    the start and end positions of the NS1 gene in terms of 1-based indexing.
+
+    Returns:
+        tuple[tuple[int, int]]: A single tuple containing the start and end positions
+            of the NS1 gene.
+    """
+    _, accept_loc = find_ns_splice_sites(sequence)
+
+    # NS1 has 193 nts after splice acceptor (AG)
+    ns1_end = accept_loc + 193
+
+    # Testing against A/Texas/37/2024, the NS1 end location was adding a single additional NT.
+    # So, correct that here. I'm not sure if this is a difference between the sequences that the
+    # flu-ngs pipeline is typically run against (where the bulk of this NS splicing code was written
+    # for).
+    ns1_end -= 1
+
+    # +1 for 1-based indexing
+    return ((1, ns1_end + 1),)
+
+
+def ns2_splice_sites(sequence):
+    """
+    Return start and end positions for the two exons of the NS2 gene.
+
+    Args:
+        sequence : str
+            The sequence to extract the exons from.
+
+    Returns:
+        tuple[tuple[int, int]]
+            A tuple of two tuples. The first tuple contains the start and end positions
+            of the first exon, and the second tuple contains the start and end positions
+            of the second exon. The positions are 1-based.
+    """
+    donor_loc, accept_loc = find_ns_splice_sites(sequence)
+
+    # NS2 has 337 additional nts after splice acceptor (AG)
+    ns2_end = accept_loc + 337
+
+    # donor_loc corresponds to start of AGGT signal. 'GT' is trimmed, leaving 'AG'.
+    # So, the position of the first G is the end of the first exon.
+    ns2_exon1_end = donor_loc + 1
+
+    # accept_loc is the start of the AG splice acceptor signal. In splicing the AG is
+    # lost. So, need the position of the next nucleotide after the AG.
+    ns2_exon2_start = accept_loc + 2
+
+    # +1 for 1-based indexing
+    return ((1, ns2_exon1_end + 1), (ns2_exon2_start + 1, ns2_end + 1))
+
+
+def findall(sub: str, string: str) -> list[int]:
+    """
+    Return indexes of all substrings in a string
+    """
+    indexes = []
+    length = len(sub)
+    for i in range(len(string)):
+        if string[i : i + length] == sub:
+            indexes.append(i)
+    return indexes
+
+
+def find_ns_splice_donor(seq: str) -> int:
+    """
+    Find the AGGT splice donor signal. Returns an int which is the index of the 'A'
+
+    Notes:
+        In NS1 sequences Gabi has sent the AGGT is on average at position 38.2.
+    """
+    seq = seq.upper()
+    candidates = findall("AGGT", seq)
+
+    if not candidates:
+        raise ValueError(f"No NS1 splice donor site ('AGGT') in {seq}")
+
+    # Splice site should be in the first 100 nucs
+    candidates = filter(lambda x: x < 100, candidates)
+
+    if not candidates:
+        raise ValueError(f"No NS1 splice donor sites ('AGGT') in first 100 nt of {seq}")
+
+    # Choose the site that is closest to position 38.2
+    return min(candidates, key=lambda x: abs(x - 38.2))
+
+
+def find_ns_splice_acceptor(seq: str, donor_loc=None) -> int:
+    """
+    Find the 'AG' splice acceptor signal. Returns an int which is the index of the 'A'.
+
+    Notes:
+        Should be >350 nts downstream of the splice donor location.
+
+    Args:
+        seq (str)
+        donor_loc (int): Location of the splice donor
+    """
+    seq = seq.upper()
+
+    donor_loc = find_ns_splice_donor(seq) if donor_loc is None else donor_loc
+
+    # Find all candidate acceptor sites 350 nts downstream of the donor site
+    candidates = findall("AG", seq[donor_loc + 350 :])
+    candidates = [c + donor_loc + 350 for c in candidates]  # Fix indexing
+
+    # sequence around the splice site should be FQDI
+    candidates = list(
+        filter(
+            lambda x: four_aas_around_splice_site(seq, donor_loc, x) == "FQDI",
+            candidates,
+        )
+    )
+
+    if not candidates:
+        raise ValueError(f"No NS splice acceptor sites in {seq}")
+
+    # Pick candidate that is closest to position 507
+    return min(candidates, key=lambda x: abs(x - 507))
+
+
+def splice_ns(seq: str, donor_loc: int, accept_loc: int) -> str:
+    """
+    Splice an NS sequence given a splice donor and acceptor locations.
+
+    Args:
+        seq (str):
+        donor_loc (int): Location of the AGGT. The 'AG' remains in the
+            transcript, the 'GT' is lost.
+        acceptor_loc (int): Location of the 'AG'. The 'AG' is lost.
+    """
+    seq = seq.upper()
+
+    if (accept_loc - donor_loc) < 350:
+        raise ValueError(
+            f"Splice acceptor signal location ({accept_loc}) should be at least 350 nts "
+            f"downstream of the donor signal ({donor_loc}) location, but it is "
+            f"{accept_loc - donor_loc}"
+        )
+
+    if seq[donor_loc : donor_loc + 4] != "AGGT":
+        raise ValueError(f"No AGGT at position {donor_loc} in {seq}")
+
+    if seq[accept_loc : accept_loc + 2] != "AG":
+        raise ValueError(f"No AG at position {accept_loc} in {seq}")
+
+    return seq[: donor_loc + 2] + seq[accept_loc + 2 :]
+
+
+def four_aas_around_splice_site(seq: str, donor_loc: int, accept_loc: int) -> str:
+    """
+    What are the four amino acids either side of the splice site given a sequence,
+    donor location and acceptor location?
+    """
+    spliced = splice_ns(seq, donor_loc, accept_loc)
+    return sloppy_translate(extract_12_nts_around_splice_site(spliced, donor_loc))
+
+
+def extract_12_nts_around_splice_site(seq: str, donor_loc: int) -> str:
+    """
+    Start 4 nts downstream of the donor location
+
+            Start of splice donor 'AGGT' signal
+            ⌄     Splice site
+            |     ⌄
+        XXXXTTTCAG|GA...
+        ^
+        Extracts 12 nts from here
+    """
+    start = donor_loc - 4
+    end = start + 12
+    return seq[start:end]
+
+
+def find_ns_splice_sites(seq: str) -> tuple[int, int]:
+    """
+    Lookup the splice donor and acceptor locations for an NS1 transcript.
+    """
+    donor_loc = find_ns_splice_donor(seq)
+    accept_loc = find_ns_splice_acceptor(seq, donor_loc)
+    return donor_loc, accept_loc
