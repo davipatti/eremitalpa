@@ -383,7 +383,6 @@ def plot_subs_on_tree(
     arrow_length: float = 40,
     arrow_facecolor: str = "black",
     fontsize: float = 6,
-    missing_seq_policy: Literal["ignore", "warn", "raise", "ancestor"] = "raise",
     **kwds,
 ):
     """
@@ -406,36 +405,11 @@ def plot_subs_on_tree(
     """
     ignore = set(ignore_chars)
 
-    def get_seq(node):
-        """Return the sequence for the given node."""
-        label = get_label(node)
-        try:
-            return sequences[label]
-        except KeyError as err:
-            if missing_seq_policy == "raise":
-                raise err
-            elif missing_seq_policy == "warn":
-                warnings.warn(f"no sequence for {label}")
-            elif missing_seq_policy == "ignore":
-                return None
-            elif missing_seq_policy == "ancestor":
-                try:
-                    return get_seq(node.parent)
-                except AttributeError:
-                    # Nodes without parents will raise an AttributeError
-                    warnings.warn(f"no parent with ancestral sequence for {label}")
-                    return None
-            else:
-                raise ValueError(
-                    "missing_seq_policy must be one of 'ignore', 'warn', 'raise' or 'ancestor'."
-                )
-
     for node in tree.nodes():
-        if node.parent_node and not (exclude_leaves and node.is_leaf()):
-            parent = node.parent_node
+        if (parent := node.parent_node) and not (exclude_leaves and node.is_leaf()):
 
-            parent_seq = get_seq(parent)
-            this_seq = get_seq(node)
+            parent_seq = sequences[get_label(parent)]
+            this_seq = sequences[get_label(node)]
 
             if parent_seq is None or this_seq is None:
                 continue
