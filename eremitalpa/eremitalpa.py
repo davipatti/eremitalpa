@@ -373,6 +373,113 @@ def plot_leaves_with_labels(tree, labels, ax=None, **kws):
     )
 
 
+def plot_subs_on_tree(
+    tree: dp.Tree,
+    sequences: dict[str, str],
+    exclude_leaves: bool = True,
+    site_offset: int = 0,
+    ignore_chars: str = "X-",
+    arrow_length: float = 40,
+    arrow_facecolor: str = "black",
+    fontsize: float = 6,
+    missing_seq_policy: Literal["ignore", "warn", "raise", "ancestor"] = "raise",
+    **kwds,
+):
+    """
+    Plot substitutions on a tree. This function plots substitutions on the tree by finding
+    substitutions between each node and its parent node. The substitutions are then plotted at the
+    midpoint of the edge between the node and its parent node.
+
+    Args:
+        tree (dendropy.Tree): The tree to annotate.
+        sequences (dict[str, str]): A mapping of node labels to sequences.
+        exclude_leaves (bool): If True, exclude leaves from getting substitutions.
+        site_offset (int): Value added to substitution sites. E.g. if site '1' is actually at
+            index 16 in the sequences, then pass 16.
+        ignore_chars (str): Substitutions involving characters in this string will not be shown in
+            substitutions.
+        arrow_length (float): The length of the arrow pointing to the mutation.
+        arrow_facecolor (str): The facecolor of the arrow pointing to the mutation.
+        fontsize (float): The fontsize of the text.
+        **kwds: Other keyword arguments to pass to plt.annotate.
+    """
+    ignore = set(ignore_chars)
+
+    def get_seq(node):
+        """Return the sequence for the given node."""
+        label = get_label(node)
+        try:
+            return sequences[label]
+        except KeyError as err:
+            if missing_seq_policy == "raise":
+                raise err
+            elif missing_seq_policy == "warn":
+                warnings.warn(f"no sequence for {label}")
+            elif missing_seq_policy == "ignore":
+                return None
+            elif missing_seq_policy == "ancestor":
+                try:
+                    return get_seq(node.parent)
+                except AttributeError:
+                    # Nodes without parents will raise an AttributeError
+                    warnings.warn(f"no parent with ancestral sequence for {label}")
+                    return None
+            else:
+                raise ValueError(
+                    "missing_seq_policy must be one of 'ignore', 'warn', 'raise' or 'ancestor'."
+                )
+
+    for node in tree.nodes():
+        if node.parent_node and not (exclude_leaves and node.is_leaf()):
+            parent = node.parent_node
+
+            parent_seq = get_seq(parent)
+            this_seq = get_seq(node)
+
+            if parent_seq is None or this_seq is None:
+                continue
+
+            subs = [
+                sub
+                for sub in find_substitutions(parent_seq, this_seq, offset=site_offset)
+                if all(char not in sub for char in ignore)
+            ]
+
+            if len(subs) == 0:
+                continue
+
+            x = (node._x + parent._x) / 2
+
+            plt.annotate(
+                "\n".join(map(str, subs)),
+                (x, node._y),
+                xytext=(-arrow_length, arrow_length),
+                va="bottom",
+                ha="right",
+                textcoords="offset pixels",
+                arrowprops=dict(
+                    facecolor=arrow_facecolor,
+                    shrink=0,
+                    linewidth=0,
+                    width=0.3,
+                    headwidth=2,
+                    headlength=2,
+                ),
+                fontsize=fontsize,
+                **kwds,
+            )
+
+
+def get_label(node: dp.Node):
+    """Return the label of a node. If the node itself has a label, use that. Otherwise
+    return the label of the node's taxon.
+    """
+    if node.label is not None:
+        return node.label
+    else:
+        return node.taxon.label
+
+
 def taxon_in_node_labels(labels, node):
     """True if node has taxon label in labels, else False"""
     try:
