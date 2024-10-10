@@ -1,20 +1,18 @@
-"""
-Drawing phylogenetic trees (dendropy.Tree instances) using matplotlib.
-"""
-
-from collections import namedtuple, Counter
-import itertools
-from typing import Optional, Generator, Iterable, Union, Literal, Any
+from collections import namedtuple, Counter, defaultdict
 from operator import attrgetter, itemgetter
+from typing import Optional, Generator, Iterable, Union, Literal, Any, Mapping
+import itertools
 import warnings
+
+from Bio import SeqIO, Align
+from Bio.SeqRecord import SeqRecord
 import dendropy as dp
 import matplotlib as mp
 import matplotlib.pyplot as plt
 import numpy as np
-from Bio import SeqIO, Align
-from Bio.SeqRecord import SeqRecord
+import pandas as pd
 
-from .bio import amino_acid_colors
+from .bio import amino_acid_colors, sloppy_translate, find_substitutions
 
 Axes = mp.axes.Axes
 
