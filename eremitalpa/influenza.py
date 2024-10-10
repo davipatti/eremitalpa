@@ -169,7 +169,7 @@ cluster_colors = {
 
 
 def cluster_from_ha(sequence, seq_type="long"):
-    """Classify an amino acid sequence as an antignenic cluster by checking
+    """Classify an amino acid sequence as an antigenic cluster by checking
     whether the sequences Bjorn 7 sites match exactly sites that are known in
     a cluster.
 
@@ -697,10 +697,12 @@ def plot_tree_coloured_by_cluster(
     if legend:
         # Find clusters in this tree
         leaf_clusters = set(
-            leaf.cluster if hasattr(leaf, "cluster") else None for leaf in tree.leaf_node_iter()
+            leaf.cluster if hasattr(leaf, "cluster") else None
+            for leaf in tree.leaf_node_iter()
         )
         internal_clusters = set(
-            node.cluster if hasattr(node, "cluster") else None for node in tree.internal_nodes()
+            node.cluster if hasattr(node, "cluster") else None
+            for node in tree.internal_nodes()
         )
         all_clusters = leaf_clusters.union(internal_clusters)
 
@@ -721,8 +723,8 @@ def has_different_cluster_descendent(node):
     Returns:
         (bool)
     """
-    descendents = list(node.postorder_internal_node_iter()) + node.leaf_nodes()
-    for d in descendents:
+    descendants = list(node.postorder_internal_node_iter()) + node.leaf_nodes()
+    for d in descendants:
         if d.cluster and d.cluster != node.cluster:
             return True
     return False
@@ -730,7 +732,7 @@ def has_different_cluster_descendent(node):
 
 def guess_clusters_in_tree(node):
     """
-    If a node is in a known cluster, and all of it's descendents are in the
+    If a node is in a known cluster, and all of it's descendants are in the
     same cluster, or an unknown cluster, then, update all the descendent nodes
     to the matching cluster.
     """
@@ -742,8 +744,8 @@ def guess_clusters_in_tree(node):
         return
 
     else:
-        descendents = list(node.postorder_internal_node_iter()) + node.leaf_nodes()
-        for d in descendents:
+        descendants = list(node.postorder_internal_node_iter()) + node.leaf_nodes()
+        for d in descendants:
             if d.cluster is None:
                 d.cluster = node.cluster
 
