@@ -752,7 +752,6 @@ def guess_clusters_in_tree(node):
 def plot_subs_on_tree(
     tree,
     seq_attr,
-    cluster_change_only=None,
     length=30,
     exclude_leaves=True,
     find_mutation_offset=0,
@@ -796,12 +795,6 @@ def plot_subs_on_tree(
 
         if node.parent_node:
             parent = node.parent_node
-
-            # try:
-            #     if cluster_change_only and node.cluster == parent.cluster:
-            #         continue
-            # except AttributeError:
-            #     pass
 
             a = getattr(parent, seq_attr)
             b = getattr(node, seq_attr)
