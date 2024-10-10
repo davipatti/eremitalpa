@@ -286,49 +286,46 @@ def plot_tree(
         )
 
     # Labels
-    # Test if labels is an iterable.
-    # If it is, label nodes contained in iterable.
-    # If it isn't, but is truthy, label all leaf nodes.
-    try:
-        iter(labels)
-    except TypeError:
 
-        # Labels is True but not iterable - label all leaf nodes
-        if labels:
-            for node in tree.leaf_node_iter():
-                ax.text(node._x, node._y, node.taxon.label, **label_kws)
+    # If labels is True but not iterable, simply label all leaf nodes
+    if not isinstance(labels, Iterable) and labels:
+        for node in tree.leaf_node_iter():
+            ax.text(node._x, node._y, node.taxon.label, **label_kws)
+
+    # If labels is a mapping then look up the label for each node
+    elif isinstance(labels, (Mapping, pd.Series)):
+        for node in tree.leaf_node_iter():
+            if label := labels.get(node.taxon.label):
+                ax.text(node._x, node._y, label, **label_kws)
+
+    # If all nodes are passed, plot all their labels
+    elif all(isinstance(item, dp.Node) for item in labels):
+        for node in labels:
+            ax.text(node._x, node._y, node.taxon.label, **label_kws)
+
+    elif all(isinstance(item, str) for item in labels):
+
+        # If all strings are passed, and there is one per leaf, plot each on a leaf
+        if len(labels) == len(tree.leaf_nodes()):
+            for node, label in zip(tree.leaf_node_iter(), labels):
+                ax.text(node._x, node._y, label, **label_kws)
+
+        # If all strings are passed, and there are fewer than one per leaf, find
+        # the nodes that have these taxon labels and label them
+        elif len(labels) < len(tree.leaf_nodes()):
+            for node in tree.find_nodes(lambda n: taxon_in_node_labels(labels, n)):
+                ax.text(
+                    node._x,
+                    node._y,
+                    node.taxon.label,
+                    **label_kws,
+                )
+
         else:
-            pass
+            raise ValueError("passed more labels than number of leaf nodes")
+
     else:
-
-        # If all nodes are passed, plot all their labels
-        if all(isinstance(item, dp.Node) for item in labels):
-            for node in labels:
-                ax.text(node._x, node._y, node.taxon.label, **label_kws)
-
-        elif all(isinstance(item, str) for item in labels):
-
-            # If all strings are passed, and there is one per leaf, plot each on a leaf
-            if len(labels) == len(tree.leaf_nodes()):
-                for node, label in zip(tree.leaf_node_iter(), labels):
-                    ax.text(node._x, node._y, label, **label_kws)
-
-            # If all strings are passed, and there are fewer than one per leaf, find
-            # the nodes that have these taxon labels and label them
-            elif len(labels) < len(tree.leaf_nodes()):
-                for node in tree.find_nodes(lambda n: taxon_in_node_labels(labels, n)):
-                    ax.text(
-                        node._x,
-                        node._y,
-                        node.taxon.label,
-                        **label_kws,
-                    )
-
-            else:
-                raise ValueError("passed more labels than number of leaf nodes")
-
-        else:
-            raise ValueError("labels must be instances of dp.Node or str")
+        raise ValueError("couldn't process labels")
 
     # Finalise
     ax.set_xlim(tree._xlim)
