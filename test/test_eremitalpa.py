@@ -51,21 +51,6 @@ class TestMultipleSequenceAlignmentVariableSites(unittest.TestCase):
         column = next(msa.variable_sites())
         self.assertIsInstance(column, ere.eremitalpa.Column)
 
-    def test_variable_sites_contain_Column_instances(self):
-        """
-        Variable sites should be Column instances.
-        """
-        msa = ere.MultipleSequenceAlignment(
-            [
-                SeqRecord(Seq("atcg")),
-                SeqRecord(Seq("atcg")),
-                SeqRecord(Seq("atcg")),
-                SeqRecord(Seq("atcc")),
-            ]
-        )
-        column = next(msa.variable_sites())
-        self.assertIsInstance(column, ere.eremitalpa.Column)
-
     def test_column_site(self):
         """
         Site should be 1-indexed.

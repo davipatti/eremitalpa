@@ -1,12 +1,10 @@
-from typing import Iterable, TypeVar, Generator
-import random
 from collections import Counter
 from itertools import combinations, groupby
+from typing import Iterable, Generator, Any
+import random
 import warnings
 
 import pandas as pd
-
-_T = TypeVar("_T")
 
 from tqdm import tqdm
 
@@ -241,14 +239,14 @@ def hamming_dist(
     ignore = set(ignore)
     d = 0
     if per_site:
-        l = 0
+        length = 0
         for m, n in zip(a, b):
             if (m not in ignore) and (n not in ignore):
-                l += 1
+                length += 1
                 if m != n:
                     d += 1
         try:
-            return d / l
+            return d / length
         except ZeroDivisionError:
             return 0.0
     else:
@@ -348,7 +346,7 @@ def filter_similar_hd(sequences, n, progress_bar=False, ignore=None):
 
 
 class TiedCounter(Counter):
-    def most_common(self, n: int | None = None) -> list[tuple[_T, int]]:
+    def most_common(self, n: int | None = None) -> list[tuple[Any, int]]:
         """
         If n=1 and there are more than one item that has the maximum count, return all of
         them, not just one. If n is not 1, do the same thing as normal
@@ -406,6 +404,7 @@ def consensus_seq(seqs: Iterable[str], case_sensitive: bool = True, **kwds) -> s
     seqs = tuple(seq.lower() for seq in seqs) if not case_sensitive else tuple(seqs)
     return "".join(_generate_consensus_chars(seqs, **kwds))
 
+
 def variable_sites(
     seq: pd.Series, max_biggest_prop: float = 0.95, ignore: str = "-X"
 ) -> Generator[int, None, None]:
@@ -421,12 +420,7 @@ def variable_sites(
     ignore = set(ignore)
     df = seq.str.split("", expand=True)
     for site in df.columns[1:-1]:
-        vc = (
-            df[site]
-            .value_counts()
-            .drop(index=ignore, errors="ignore")
-            .sort_values()
-        )
+        vc = df[site].value_counts().drop(index=ignore, errors="ignore").sort_values()
         biggest_prop = vc.max() / vc.sum()
         if biggest_prop < max_biggest_prop:
             yield site

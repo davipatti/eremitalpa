@@ -16,9 +16,11 @@ import sys
 from Bio import SeqIO
 
 parser = argparse.ArgumentParser("ere-convert-seq.py")
-parser.add_argument("-i", "--in", help="Format of input sequences", required=True, dest="informat")
+parser.add_argument(
+    "-i", "--in", help="Format of input sequences", required=True, dest="in_format"
+)
 parser.add_argument("-o", "--out", help="Format of output sequences", required=True)
 args = parser.parse_args()
 
-for record in SeqIO.parse(sys.stdin.buffer, args.informat):
+for record in SeqIO.parse(sys.stdin.buffer, args.in_format):
     SeqIO.write(record, sys.stdout, format=args.out)

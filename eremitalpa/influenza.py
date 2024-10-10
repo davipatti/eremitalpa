@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import Union, Iterable, Generator
-from operator import itemgetter
 import json
 
 import matplotlib.pyplot as plt
@@ -414,7 +413,7 @@ class ClusterTransition:
         self._clusters = self.c0, self.c1
 
         if self.c0.year >= self.c1.year:
-            raise ValueError(f"c0 year must be less than c1 year")
+            raise ValueError("c0 year must be less than c1 year")
 
     @classmethod
     def from_tuple(cls, c0c1) -> "ClusterTransition":
@@ -661,19 +660,19 @@ def plot_tree_coloured_by_cluster(
     """
     leaf_color = [
         (
-            cluster_colors[l.cluster]
-            if hasattr(l, "cluster") and l.cluster in cluster_colors
+            cluster_colors[leaf.cluster]
+            if hasattr(leaf, "cluster") and leaf.cluster in cluster_colors
             else unknown_color
         )
-        for l in tree.leaf_node_iter()
+        for leaf in tree.leaf_node_iter()
     ]
     internal_color = [
         (
-            cluster_colors[n.cluster]
-            if hasattr(n, "cluster") and n.cluster in cluster_colors
+            cluster_colors[node.cluster]
+            if hasattr(node, "cluster") and node.cluster in cluster_colors
             else unknown_color
         )
-        for n in tree.internal_nodes()
+        for node in tree.internal_nodes()
     ]
 
     leaf_kws = {
@@ -698,10 +697,10 @@ def plot_tree_coloured_by_cluster(
     if legend:
         # Find clusters in this tree
         leaf_clusters = set(
-            l.cluster if hasattr(l, "cluster") else None for l in tree.leaf_node_iter()
+            leaf.cluster if hasattr(leaf, "cluster") else None for leaf in tree.leaf_node_iter()
         )
         internal_clusters = set(
-            n.cluster if hasattr(n, "cluster") else None for n in tree.internal_nodes()
+            node.cluster if hasattr(node, "cluster") else None for node in tree.internal_nodes()
         )
         all_clusters = leaf_clusters.union(internal_clusters)
 
