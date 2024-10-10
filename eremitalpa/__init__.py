@@ -10,11 +10,13 @@ from .bio import (
     grouped_sample,
     hamming_dist_lt,
     hamming_dist,
+    load_fasta,
     pairwise_hamming_dists,
     sloppy_translate,
     Substitution,
     TiedCounter,
     variable_sites,
+    write_fasta,
 )
 from .eremitalpa import (
     color_stack,
@@ -22,7 +24,6 @@ from .eremitalpa import (
     compute_tree_layout,
     deepest_leaf,
     get_trunk,
-    load_fasta,
     MultipleSequenceAlignment,
     plot_leaves_with_labels,
     plot_subs_on_tree,
@@ -50,6 +51,7 @@ from .influenza import (
     NHSeason,
     plot_aa_freq_thru_time,
     plot_tree_coloured_by_cluster,
+    translate_segment,
     translate_trim_default_ha,
 )
 from .flu_wider import b7, wider5, wider10, wider15
@@ -122,10 +124,12 @@ __all__ = [
     "taxon_in_node_label",
     "taxon_in_node_labels",
     "TiedCounter",
+    "translate_segment",
     "translate_trim_default_ha",
     "Tree",
     "variable_sites",
     "wider10",
     "wider15",
     "wider5",
+    "write_fasta",
 ]

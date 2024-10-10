@@ -4,9 +4,9 @@ from typing import Iterable, Generator, Any
 import random
 import warnings
 
-import pandas as pd
-
+from Bio import SeqIO
 from tqdm import tqdm
+import pandas as pd
 
 AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWY")
 
@@ -111,7 +111,7 @@ def sloppy_translate(sequence):
     """Translate a nucleotide sequence.
 
     Don't check that the sequence length is a multiple of three. If any 'codon'
-    contains any character not in [ATCG] then return X.
+    contains any character not in [ACTG] then return X.
 
     Args:
         sequence (str): Lower or upper case.
@@ -120,15 +120,17 @@ def sloppy_translate(sequence):
         (str)
     """
     sequence = sequence.upper()
-    peptide = ""
+    peptide = []
+    append = peptide.append
     for i in range(0, len(sequence), 3):
         j = i + 3
         codon = sequence[i:j]
         try:
-            peptide += TRANSLATION_TABLE[codon]
+            amino_acid = TRANSLATION_TABLE[codon]
         except KeyError:
-            peptide += "X"
-    return peptide
+            amino_acid = "X"
+        append(amino_acid)
+    return "".join(peptide)
 
 
 def find_mutations(*args, **kwargs):
@@ -424,3 +426,33 @@ def variable_sites(
         biggest_prop = vc.max() / vc.sum()
         if biggest_prop < max_biggest_prop:
             yield site
+
+
+def load_fasta(path: str, translate_nt: bool = False) -> dict[str, str]:
+    """
+    Load fasta file sequences.
+
+    Args:
+        path: Path to fasta file.
+        translate_nt: Translate nucleotide sequences.
+    """
+    with open(path) as fobj:
+        return {
+            record.description: (
+                sloppy_translate(str(record.seq)) if translate_nt else str(record.seq)
+            )
+            for record in SeqIO.parse(fobj, format="fasta")
+        }
+
+
+def write_fasta(path: str, records: dict[str, str]) -> None:
+    """
+    Write a fasta file.
+
+    Args:
+        path: Path to fasta file to write.
+        records: A dict, the keys will become fasta headers, values will be sequences.
+    """
+    with open(path, "w") as fobj:
+        for header, sequence in records.items():
+            fobj.write(f">{header}\n{sequence}\n")
