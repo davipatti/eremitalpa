@@ -27,13 +27,19 @@ default_label_kws = dict(
 )
 
 
-def load_fasta(path: str) -> dict[str, str]:
+def load_fasta(path: str, translate_nt: bool = False) -> dict[str, str]:
     """
     Load fasta file sequences.
+
+    Args:
+        path: Path to fasta file.
+        translate_nt: Translate nucleotide sequences.
     """
     with open(path) as fobj:
         return {
-            record.description: str(record.seq)
+            record.description: (
+                sloppy_translate(str(record.seq)) if translate_nt else str(record.seq)
+            )
             for record in SeqIO.parse(fobj, format="fasta")
         }
 
