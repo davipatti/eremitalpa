@@ -14,7 +14,6 @@ import pandas as pd
 
 from .bio import amino_acid_colors, sloppy_translate, find_substitutions
 
-Axes = mp.axes.Axes
 
 # Defaults
 default_edge_kws = dict(color="black", linewidth=0.5, clip_on=False, capstyle="round")
@@ -46,8 +45,8 @@ class Tree(dp.Tree):
     def plot_tree_msa(
         self,
         msa_plot_kwds: Optional[dict] = None,
-        axes: Optional[tuple[Axes, Axes]] = None,
-    ) -> tuple[Axes, Axes]:
+        axes: Optional[tuple[mp.axes.Axes, mp.axes.Axes]] = None,
+    ) -> tuple[mp.axes.Axes, mp.axes.Axes]:
         """
         Plot the tree and multiple sequence alignment.
         """
@@ -181,12 +180,12 @@ def plot_tree(
     edge_kws: dict = default_edge_kws,
     leaf_kws: dict = default_leaf_kws,
     internal_kws: dict = default_internal_kws,
-    ax: Axes = None,
+    ax: mp.axes.Axes = None,
     labels: Optional[Union[Iterable[str], Literal["all"]]] = None,
     label_kws: dict = default_label_kws,
     compute_layout: bool = True,
     fill_dotted_lines: bool = False,
-) -> Axes:
+) -> mp.axes.Axes:
     """Plot a dendropy tree object.
 
     Tree nodes are plotted in their current order. So, to ladderize, call
@@ -840,12 +839,12 @@ class MultipleSequenceAlignment(Align.MultipleSeqAlignment):
 
     def plot(
         self,
-        ax: Optional[Axes] = None,
+        ax: Optional[mp.axes.Axes] = None,
         fontsize: int = 6,
         variable_sites_kwds: Optional[dict] = None,
         rotate_xtick_labels: bool = False,
         sites: Optional[Iterable[int]] = None,
-    ) -> Axes:
+    ) -> mp.axes.Axes:
         """
         Plot variable sites in the alignment.
 
