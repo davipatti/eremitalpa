@@ -102,7 +102,7 @@ class Tree(dp.Tree):
 
         if outgroup is not None:
             og = tree.find_node_with_taxon_label(outgroup)
-            tree.reroot_at_node(og)
+            tree.reroot_at_edge(og.edge)
 
         try:
             tree.ladderize(default_order=True)
