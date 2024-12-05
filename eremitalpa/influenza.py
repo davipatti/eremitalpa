@@ -343,7 +343,17 @@ def hamming_to_cluster(
     )
 
 
+def load_cluster_nt_consensus() -> dict[str, str]:
+    "Load cluster nt consensus seqs."
+    path = Path(__file__).parent.parent.joinpath("data", "flu", "cluster_cons.json")
+    with open(path, "r") as fp:
+        return json.load(fp)
+
+
 class Cluster:
+
+    _cluster_nt_sequences = load_cluster_nt_consensus()
+
     def __init__(self, cluster) -> None:
         if str(cluster).upper() not in _clusters:
             raise ValueError(f"unknown cluster: {cluster}")
@@ -396,7 +406,7 @@ class Cluster:
     @property
     def nt_sequence(self) -> str:
         """Representative nucleotide sequence."""
-        return _cluster_nt_sequences[self._name]
+        return self._cluster_nt_sequences[self._name]
 
     def codon(self, n: int) -> str:
         """Codon at amino acid position n. 1-indexed."""
@@ -855,16 +865,6 @@ def plot_subs_on_tree(
                 ),
                 **kws,
             )
-
-
-def load_cluster_nt_consensus() -> dict[str, str]:
-    "Load cluster nt consensus seqs."
-    path = Path(__file__).parent.parent.joinpath("data", "flu", "cluster_cons.json")
-    with open(path, "r") as fp:
-        return json.load(fp)
-
-
-_cluster_nt_sequences = load_cluster_nt_consensus()
 
 
 def translate_trim_default_ha(nt: str) -> str:

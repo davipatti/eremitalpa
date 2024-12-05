@@ -1,10 +1,11 @@
-from collections import Counter
+from collections import Counter, namedtuple
 from itertools import combinations, groupby
 from typing import Iterable, Generator, Any
 import random
 import warnings
 
 from Bio import SeqIO
+from Bio.Align import PairwiseAligner
 from tqdm import tqdm
 import pandas as pd
 
@@ -456,3 +457,76 @@ def write_fasta(path: str, records: dict[str, str]) -> None:
     with open(path, "w") as fobj:
         for header, sequence in records.items():
             fobj.write(f">{header}\n{sequence}\n")
+
+
+ReferenceAlignment = namedtuple(
+    "ReferenceAlignment", ("aligned", "internal_gap_in_ref")
+)
+
+
+def align_to_reference(reference_seq: str, input_seq: str) -> ReferenceAlignment:
+    """
+    Align an input sequence to a reference. Returns the aligned input sequence trimmed to the region
+    of the reference.
+
+    Args:
+        reference_seq (str):
+        input_seq (str):
+
+    Raises:
+        ValueError: If internal gaps are introduced in the reference during alignment.
+
+    Returns:
+        ReferenceAlignment tuple containing:
+            'aligned' - the aligned input sequence
+            'internal_gap_in_ref' - boolean indicating if a gap was inserted in the reference
+    """
+    aligner = PairwiseAligner()
+    aligner.mode = "global"
+
+    # Bigger penalty to open gaps
+    aligner.target_internal_open_gap_score = -5
+    aligner.query_internal_open_gap_score = -5
+
+    # Perform the alignment
+    alignments = aligner.align(reference_seq, input_seq)
+    best_alignment = alignments[0]
+
+    # Extract the aligned sequences
+    # Biopython doesn't provide a nice way of extracting the aligned sequences. This is the
+    # 'cleanest' I could come up with.
+    aligned_ref, _, aligned_input = best_alignment._format_unicode().strip().split("\n")
+
+    # Check for internal gaps in the reference sequence
+    first_non_gap, last_non_gap = idx_first_and_last_non_gap(aligned_ref)
+    internal_gap_in_ref = "-" in aligned_ref[first_non_gap:last_non_gap]
+
+    # Trim the input sequence to match the reference length
+    # Get the positions corresponding to the non-gap parts of the reference
+    trimmed_input_seq = aligned_input[first_non_gap : last_non_gap + 1]
+
+    return ReferenceAlignment(trimmed_input_seq, internal_gap_in_ref)
+
+
+def idx_first_and_last_non_gap(sequence: str) -> tuple[int, int]:
+    """
+    Returns the indices of the first and last non-gap ('-') characters in a sequence.
+    If all characters are gaps, returns None for both indices.
+
+    Args:
+        sequence (str): The input sequence containing gaps ('-').
+
+    Returns:
+        tuple: A tuple (first_non_gap_index, last_non_gap_index).
+    """
+    for i, char in enumerate(sequence):
+        if char != "-":
+            first_non_gap = i
+            break
+
+    for i in range(len(sequence) - 1, -1, -1):
+        if sequence[i] != "-":
+            last_non_gap = i
+            break
+
+    return first_non_gap, last_non_gap
