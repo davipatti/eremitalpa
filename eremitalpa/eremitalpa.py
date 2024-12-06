@@ -77,6 +77,7 @@ class Tree(dp.Tree):
         cls,
         path: str,
         schema: str = "newick",
+        preserve_underscores: bool = True,
         outgroup: Optional[str] = None,
         msa_path: Optional[str] = None,
         get_kwds: Optional[dict] = None,
@@ -88,12 +89,16 @@ class Tree(dp.Tree):
         Args:
             path: Path to file containing tree.
             schema: See dendropy.Tree.get
+            preserve_underscores: Preserve underscores in taxon labels. (Overwrites
+                'preserve_underscores' key if passed in get_kwds.)
             outgroup: Name of taxon to use as outgroup.
             msa_path: Path to fasta file containing leaf sequences.
             get_kwds: Passed to dendropy.Tree.get.
             kwds: Passed to add_sequences_to_tree
         """
         get_kwds = {} if get_kwds is None else get_kwds
+
+        get_kwds["preserve_underscores"] = preserve_underscores
 
         tree = cls.get(path=path, schema=schema, **get_kwds)
 
