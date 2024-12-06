@@ -42,6 +42,9 @@ parser.add_argument("--outgroup", required=False, default=None)
 parser.add_argument("--width", required=False, default=None)
 parser.add_argument("--height", required=False, default=None)
 parser.add_argument("--fontsize", required=False, default=None)
+parser.add_argument(
+    "--csv", required=False, action="store_true", help="Metadata is a CSV file."
+)
 args = parser.parse_args()
 
 tree = ere.Tree.from_disk(
@@ -57,7 +60,7 @@ if args.leaf_labels and not args.metadata:
 
 
 if args.metadata:
-    df = pd.read_table(args.metadata, sep="\t", index_col=0)
+    df = pd.read_table(args.metadata, sep="," if args.csv else "\t", index_col=0)
     leaves = [leaf.taxon.label for leaf in tree.leaf_nodes()]
 else:
     df = None
