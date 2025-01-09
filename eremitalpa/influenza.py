@@ -352,8 +352,6 @@ def load_cluster_nt_consensus() -> dict[str, str]:
 
 class Cluster:
 
-    _cluster_nt_sequences = load_cluster_nt_consensus()
-
     def __init__(self, cluster) -> None:
         if str(cluster).upper() not in _clusters:
             raise ValueError(f"unknown cluster: {cluster}")
@@ -406,6 +404,8 @@ class Cluster:
     @property
     def nt_sequence(self) -> str:
         """Representative nucleotide sequence."""
+        if not hasattr(self, "_cluster_nt_sequences"):
+            self._cluster_nt_sequences = load_cluster_nt_consensus()
         return self._cluster_nt_sequences[self._name]
 
     def codon(self, n: int) -> str:
