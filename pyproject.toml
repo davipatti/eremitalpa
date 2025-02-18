@@ -3,7 +3,14 @@ name = "eremitalpa"
 description = "Plot dendropy trees"
 version = "1.1.5"
 authors = [{ name = "David Pattinson", email = "david.pattinson@wisc.edu" }]
-dependencies = ["adjustText", "arviz", "biopython", "dendropy", "matplotlib"]
+dependencies = [
+    "adjustText",
+    "arviz",
+    "biopython",
+    "dendropy",
+    "matplotlib",
+    "tqdm",
+]
 
 [tool.setuptools]
 packages = ["eremitalpa"]
