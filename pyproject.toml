@@ -8,7 +8,10 @@ dependencies = [
     "arviz",
     "biopython",
     "dendropy",
+    "IPython",
     "matplotlib",
+    "numpy",
+    "pandas",
     "tqdm",
 ]
 
