@@ -16,10 +16,10 @@ from .bio import amino_acid_colors, sloppy_translate, find_substitutions
 
 
 # Defaults
-default_edge_kws = dict(color="black", linewidth=0.5, clip_on=False, capstyle="round")
-default_leaf_kws = dict(s=0)
-default_internal_kws = dict()
-default_label_kws = dict(
+DEFAULT_EDGE_KWS = dict(color="black", linewidth=0.5, clip_on=False, capstyle="round")
+DEFAULT_LEAF_KWS = dict(color="black", s=0)
+DEFAULT_INTERNAL_KWS = dict()
+DEFAULT_LABEL_KWS = dict(
     horizontalalignment="left", verticalalignment="center", fontsize=8
 )
 
@@ -165,12 +165,12 @@ def compute_tree_layout(
 def plot_tree(
     tree: dp.Tree,
     has_brlens: bool = True,
-    edge_kws: dict = default_edge_kws,
-    leaf_kws: dict = default_leaf_kws,
-    internal_kws: dict = default_internal_kws,
+    edge_kws: dict = DEFAULT_EDGE_KWS,
+    leaf_kws: dict = DEFAULT_LEAF_KWS,
+    internal_kws: dict = DEFAULT_INTERNAL_KWS,
     ax: mp.axes.Axes = None,
     labels: Optional[Union[Iterable[str], Literal["all"]]] = None,
-    label_kws: dict = default_label_kws,
+    label_kws: dict = DEFAULT_LABEL_KWS,
     compute_layout: bool = True,
     fill_dotted_lines: bool = False,
 ) -> mp.axes.Axes:
@@ -219,10 +219,10 @@ def plot_tree(
     elif labels is None:
         labels = []
 
-    label_kws = {**default_label_kws, **label_kws}
-    leaf_kws = {**default_leaf_kws, **leaf_kws}
-    edge_kws = {**default_edge_kws, **edge_kws}
-    internal_kws = {**default_internal_kws, **internal_kws}
+    label_kws = {**DEFAULT_LABEL_KWS, **label_kws}
+    leaf_kws = {**DEFAULT_LEAF_KWS, **leaf_kws}
+    edge_kws = {**DEFAULT_EDGE_KWS, **edge_kws}
+    internal_kws = {**DEFAULT_INTERNAL_KWS, **internal_kws}
 
     tree = compute_tree_layout(tree, has_brlens) if compute_layout else tree
 
@@ -239,9 +239,9 @@ def plot_tree(
             min_y = min(node._y for node in node.child_node_iter())
             edges.append(((node._x, max_y), (node._x, min_y)))
 
-    lc = mp.collections.LineCollection(segments=edges, **edge_kws)
-    ax.add_artist(lc)
+    ax.add_artist(mp.collections.LineCollection(segments=edges, **edge_kws))
 
+    # Dotted lines from the leaves to the right hand edge of the tree
     if fill_dotted_lines:
         max_x = max(node._x for node in tree.leaf_nodes())
         dotted_edges = [
