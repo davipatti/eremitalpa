@@ -2,6 +2,9 @@ from collections import namedtuple, Counter, defaultdict
 from operator import attrgetter, itemgetter
 from typing import Optional, Generator, Iterable, Union, Literal, Any, Mapping
 import itertools
+import logging
+import math
+import random
 import warnings
 
 from Bio import SeqIO, Align
@@ -184,6 +187,7 @@ def plot_tree(
     color_leaves_by_site_aa: Optional[int] = None,
     color_internal_nodes_by_site_aa: Optional[int] = None,
     sequences: Optional[dict[str, str]] = None,
+    jitter_x: Optional[float | str] = None,
 ) -> mp.axes.Axes:
     """
     Plot a dendropy tree object.
@@ -215,6 +219,12 @@ def plot_tree(
             nodes.
         sequences: A mapping of taxon labels and to sequences. Required for
             `color_leaves_by_site_aa`.
+        jitter_x: Add a small amount of noise to the x value of the leaves to avoid over plotting.
+            Either pass a float (the amount of noise) or 'auto' to try to automatically calculate a
+            suitable value. 'auto' tries to calculate the fundamental 'unit' of branch length in the
+            tree and then jitters x values by 1/2 of this value in either direction. See
+            estimate_unit_branch_length for more information. Currently, positions of labels are
+            not jittered.
 
     Returns:
         tuple containing (Tree, ax). The tree and matplotlib ax. The tree has
@@ -270,6 +280,13 @@ def plot_tree(
             )
         )
 
+    # Infer suitable jitter_x value if need be
+    if jitter_x == "auto":
+        jitter_x = estimate_unit_branch_length(
+            [edge.length for edge in tree.edges() if edge.length is not None]
+        )
+        logging.info(f"Auto jitter_x: {jitter_x}")
+
     # Draw leaves
     if color_leaves_by_site_aa is not None:
 
@@ -283,15 +300,28 @@ def plot_tree(
             """
             return sequences[node.taxon.label][color_leaves_by_site_aa - 1]
 
+        # Make groups of nodes that all have a particular amino acid at the site
         sorted_nodes = sorted(tree.leaf_node_iter(), key=_get_aa)
+        aa_groups = {
+            aa: list(nodes)
+            for aa, nodes in itertools.groupby(sorted_nodes, key=_get_aa)
+        }
 
-        for aa, nodes in itertools.groupby(sorted_nodes, key=_get_aa):
+        # Order the groups by size so that the smallest groups are plotted last to make them more
+        # visible. Put unknown amino acids at the back
+        for aa in reversed(
+            sorted(
+                aa_groups,
+                key=lambda aa: len(aa_groups[aa]) if aa != "X" else math.inf,
+            )
+        ):
+            nodes = aa_groups[aa]
             leaf_kws["color"] = amino_acid_colors[aa]
-            x, y = node_x_y(nodes)
+            x, y = node_x_y(nodes, jitter_x=jitter_x)
             ax.scatter(x, y, **leaf_kws, label=aa)
 
     else:
-        x, y = node_x_y(tree.leaf_node_iter())
+        x, y = node_x_y(tree.leaf_node_iter(), jitter_x=jitter_x)
         ax.scatter(x, y, **leaf_kws)
 
     # Draw internal nodes
@@ -359,18 +389,27 @@ def plot_tree(
     return tree, ax
 
 
-def node_x_y(nodes: Iterable[dp.Node]) -> tuple[tuple, tuple]:
+def node_x_y(
+    nodes: Iterable[dp.Node], jitter_x: Optional[float] = None
+) -> tuple[tuple, tuple]:
     """
     x and y coordinates of nodes.
 
     Args:
         nodes (Iterable[dp.Node]): An iterable collection of dp.Node objects.
+        jitter_x (Optional[float]): The amount of jitter to add to x coordinates. X is jittered
+            by a quarter of this value above and below.
 
     Returns:
         tuple[tuple, tuple]: A tuple containing two tuples, the first with all x coordinates and the
             second with all y coordinates.
     """
-    return zip(*((node._x, node._y) for node in nodes))
+    if jitter_x is None:
+        return zip(*((node._x, node._y) for node in nodes))
+    else:
+        lo = -jitter_x / 4
+        hi = jitter_x / 4
+        return zip(*((node._x + random.uniform(lo, hi), node._y) for node in nodes))
 
 
 def plot_leaves_with_labels(
@@ -1006,3 +1045,39 @@ def color_stack(
     ax.add_artist(leg)
     ax.axis(False)
     return ax, leg
+
+
+def estimate_unit_branch_length(
+    branch_lengths: list[float], min_diff: float = 1e-6, round_to: int = 6
+) -> float:
+    """
+    Estimates the fundamental unit length in a set of phylogenetic branch lengths. Assumes that
+    branch lengths occur in approximate integer multiples of a small unit. Algorithm:
+
+        1. Compute all pairwise absolute differences between branch lengths.
+        2. Construct a histogram of these differences with an adaptive bin size.
+        3. Identify the most common small difference (mode of the histogram),
+        which represents the estimated unit length.
+
+    Args:
+        branch_lengths (list or np.array): A list of branch lengths.
+        min_diff (float): Minimum difference between branch lengths to consider. Branch length
+            differences smaller than this value are considered to be zero.
+        round_to (int): Round branch_lengths to this many decimal places.
+
+    Returns:
+        float: Estimated fundamental unit length.
+    """
+    branch_lengths = np.array([round(edge, round_to) for edge in branch_lengths])
+
+    # Compute pairwise absolute differences
+    diffs = np.abs(np.subtract.outer(branch_lengths, branch_lengths))
+    diffs = diffs[np.triu_indices_from(diffs, k=1)]  # Extract unique values
+    diffs = diffs[diffs > min_diff]  # Remove near-zero values
+
+    # Define bin width adaptively based on small quantile
+    bin_width = np.percentile(diffs, 1)
+    hist, bin_edges = np.histogram(diffs, bins=np.arange(0, np.max(diffs), bin_width))
+
+    # Find bin with the highest count (mode) and return it
+    return bin_edges[np.argmax(hist)]
