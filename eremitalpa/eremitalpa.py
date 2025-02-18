@@ -272,16 +272,27 @@ def plot_tree(
 
     # Draw leaves
     if color_leaves_by_site_aa is not None:
-        leaf_kws["color"] = [
-            amino_acid_colors[sequences[node.taxon.label][color_leaves_by_site_aa - 1]]
-            for node in tree.leaf_node_iter()
-        ]
 
-    ax.scatter(
-        tuple(node._x for node in tree.leaf_node_iter()),
-        tuple(node._y for node in tree.leaf_node_iter()),
-        **leaf_kws,
-    )
+        # Group leaves by amino acid at site so that each group can be colored and a label passed
+        # for the legend.
+
+        def _get_aa(node):
+            """
+            Temporary helper function to get the amino acid at the site. Passed to sorted and
+            itertools.groupby to group leaves regardless of input order.
+            """
+            return sequences[node.taxon.label][color_leaves_by_site_aa - 1]
+
+        sorted_nodes = sorted(tree.leaf_node_iter(), key=_get_aa)
+
+        for aa, nodes in itertools.groupby(sorted_nodes, key=_get_aa):
+            leaf_kws["color"] = amino_acid_colors[aa]
+            x, y = node_x_y(nodes)
+            ax.scatter(x, y, **leaf_kws, label=aa)
+
+    else:
+        x, y = node_x_y(tree.leaf_node_iter())
+        ax.scatter(x, y, **leaf_kws)
 
     # Draw internal nodes
     if color_internal_nodes_by_site_aa is not None:
@@ -293,11 +304,8 @@ def plot_tree(
         ]
 
     if internal_kws:
-        ax.scatter(
-            tuple(node._x for node in tree.internal_nodes()),
-            tuple(node._y for node in tree.internal_nodes()),
-            **internal_kws,
-        )
+        x, y = node_x_y(tree.internal_nodes())
+        ax.scatter(x, y, **internal_kws)
 
     # Labels
 
@@ -349,6 +357,20 @@ def plot_tree(
     ax.invert_yaxis()
 
     return tree, ax
+
+
+def node_x_y(nodes: Iterable[dp.Node]) -> tuple[tuple, tuple]:
+    """
+    x and y coordinates of nodes.
+
+    Args:
+        nodes (Iterable[dp.Node]): An iterable collection of dp.Node objects.
+
+    Returns:
+        tuple[tuple, tuple]: A tuple containing two tuples, the first with all x coordinates and the
+            second with all y coordinates.
+    """
+    return zip(*((node._x, node._y) for node in nodes))
 
 
 def plot_leaves_with_labels(
