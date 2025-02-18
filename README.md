@@ -10,7 +10,7 @@ Dependencies
 - [dendropy](https://dendropy.org/)
 
 ```bash
-pip3 install git+https://github.com/davipatti/eremitalpa.git
+pip install git+https://github.com/davipatti/eremitalpa.git
 ```
 
 ## Basic usage:
