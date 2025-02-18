@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
-
 import sys
 from itertools import groupby
 from operator import itemgetter
+import argparse
 from typing import Generator
 
 from Bio.SeqIO import parse, to_dict
@@ -19,12 +18,10 @@ def runs(data: list[int]) -> Generator[str, None, None]:
         yield str(group[0]) if len(group) == 1 else f"{group[0]}-{group[-1]}"
 
 
-if __name__ == "__main__":
-
-    import argparse
+def main():
 
     parser = argparse.ArgumentParser(
-        "ere-make-chimera.py",
+        "ere_make_chimera",
         description="Make a chimeric sequence sequence characters that are missing in `incomplete` "
         "are filled by those in `donor`. Fasta file read from stdin must contain both incomplete "
         "and donor sequences. The result is printed to stdout, a summary of the sites used from "

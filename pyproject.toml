@@ -1,0 +1,26 @@
+[project]
+name = "eremitalpa"
+description = "Plot dendropy trees"
+version = "1.1.5"
+authors = [{ name = "David Pattinson", email = "david.pattinson@wisc.edu" }]
+dependencies = ["adjustText", "arviz", "biopython", "dendropy", "matplotlib"]
+
+[tool.setuptools]
+packages = ["eremitalpa"]
+
+[project.optional-dependencies]
+dev = ["pytest", "flake8", "pytest-subtests"]
+
+[tool.pytest.ini_options]
+filterwarnings = ["error", "ignore::DeprecationWarning", "ignore::UserWarning"]
+markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
+
+[project.scripts]
+ere-align-to-reference = "eremitalpa.scripts.align_to_reference:main"
+ere-filter-similar-hd = "eremitalpa.scripts.filter_similar_hd:main"
+ere-revcomp-match = "eremitalpa.scripts.revcomp_match:main"
+ere-convert-seq = "eremitalpa.scripts.convert_seq:main"
+ere-make-chimera = "eremitalpa.scripts.make_chimera:main"
+ere-plot-labelled-phylogeny = "eremitalpa.scripts.plot_labelled_phylogeny:main"
+ere-print-phylogeny-leaves = "eremitalpa.scripts.print_phylogeny_leaves:main"
+ere-write-iqtree-ancestral-seqs = "eremitalpa.scripts.ere_write_iqtree_ancestral_seqs:main"
