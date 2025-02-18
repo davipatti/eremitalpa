@@ -3,7 +3,6 @@ from operator import attrgetter, itemgetter
 from typing import Optional, Generator, Iterable, Union, Literal, Any, Mapping
 import itertools
 import logging
-import math
 import random
 import warnings
 
@@ -188,6 +187,7 @@ def plot_tree(
     color_internal_nodes_by_site_aa: Optional[int] = None,
     sequences: Optional[dict[str, str]] = None,
     jitter_x: Optional[float | str] = None,
+    scale_bar: Optional[bool] = True,
 ) -> mp.axes.Axes:
     """
     Plot a dendropy tree object.
@@ -225,6 +225,7 @@ def plot_tree(
             tree and then jitters x values by 1/2 of this value in either direction. See
             estimate_unit_branch_length for more information. Currently, positions of labels are
             not jittered.
+        scale_bar: Show a scale bar at the bottom of the tree.
 
     Returns:
         tuple containing (Tree, ax). The tree and matplotlib ax. The tree has
@@ -241,8 +242,9 @@ def plot_tree(
     """
     ax = plt.gca() if ax is None else ax
 
-    if isinstance(labels, str) and labels == "all":
+    if labels == "all":
         labels = [node.taxon.label for node in tree.leaf_nodes()]
+
     elif labels is None:
         labels = []
 
@@ -312,13 +314,13 @@ def plot_tree(
         for aa in reversed(
             sorted(
                 aa_groups,
-                key=lambda aa: len(aa_groups[aa]) if aa != "X" else math.inf,
+                key=lambda aa: len(aa_groups[aa]) if aa != "X" else 0,
             )
         ):
             nodes = aa_groups[aa]
             leaf_kws["color"] = amino_acid_colors[aa]
             x, y = node_x_y(nodes, jitter_x=jitter_x)
-            ax.scatter(x, y, **leaf_kws, label=aa)
+            ax.scatter(x, y, **leaf_kws, label=aa if aa != "X" else None)
 
     else:
         x, y = node_x_y(tree.leaf_node_iter(), jitter_x=jitter_x)
@@ -378,6 +380,13 @@ def plot_tree(
 
     else:
         raise ValueError("couldn't process labels")
+
+    if scale_bar:
+        length = tree._xlim[1] / 10
+        length = float(f"{length:.1g}")  # round length to 1 significant figure
+        bottom = tree._ylim[1]
+        ax.plot((0, length), (bottom, bottom), c="black", lw=1, clip_on=False)
+        ax.text(length / 2, bottom, str(length), ha="center", va="bottom")
 
     # Finalise
     ax.set_xlim(tree._xlim)
