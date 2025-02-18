@@ -20,3 +20,6 @@ import eremitalpa as ere
 tree = ere.Tree.from_disk("tree.tre")
 ere.plot_dendropy_tree(tree)
 ```
+
+
+Check out the [docs](https://davipatti.github.io/eremitalpa/).
