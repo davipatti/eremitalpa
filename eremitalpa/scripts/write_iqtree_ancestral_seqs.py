@@ -1,14 +1,11 @@
-#!/usr/bin/env python3
+import argparse
+
+from eremitalpa import read_iqtree_ancestral_states, write_fasta
 
 
-if __name__ == "__main__":
-
-    import argparse
-
-    from eremitalpa import read_iqtree_ancestral_states, write_fasta
-
+def main():
     parser = argparse.ArgumentParser(
-        "ere-write-iqtree-ancestral-seqs.py",
+        "ere_write_iqtree_ancestral_seqs",
         description="Convert an IQTREE .state file containing ancestral sequences to a FASTA file.",
     )
     parser.add_argument("--states", help="Ancestral state file.")

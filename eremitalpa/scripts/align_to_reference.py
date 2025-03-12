@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import argparse
 import os
 import sys
@@ -10,9 +8,10 @@ from Bio.SeqRecord import SeqRecord
 from Bio.SeqIO import parse, write
 from tqdm import tqdm
 
-if __name__ == "__main__":
+
+def main():
     parser = argparse.ArgumentParser(
-        "ere-align-to-reference.py",
+        "ere_align_to_reference",
         description="Align FASTA sequences to a reference. Results get printed to stdout. "
         "Sequences that introduce internal gaps in the reference sequence get printed on stderr. "
         "A progress bar gets written to ali-progress.tmp.",

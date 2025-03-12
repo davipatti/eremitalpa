@@ -2,6 +2,8 @@ from collections import namedtuple, Counter, defaultdict
 from operator import attrgetter, itemgetter
 from typing import Optional, Generator, Iterable, Union, Literal, Any, Mapping
 import itertools
+import logging
+import random
 import warnings
 
 from Bio import SeqIO, Align
@@ -14,12 +16,20 @@ import pandas as pd
 
 from .bio import amino_acid_colors, sloppy_translate, find_substitutions
 
+# MARKERS
+_DEFAULT_MARKER_KWS = dict(
+    color="black", s=0, marker="o", edgecolor="white", lw=0.1, clip_on=False
+)
+DEFAULT_LEAF_KWS = dict(zorder=15, **_DEFAULT_MARKER_KWS)
+DEFAULT_INTERNAL_KWS = dict(zorder=12, **_DEFAULT_MARKER_KWS)
 
-# Defaults
-default_edge_kws = dict(color="black", linewidth=0.5, clip_on=False, capstyle="round")
-default_leaf_kws = dict(s=0)
-default_internal_kws = dict()
-default_label_kws = dict(
+# EDGES
+DEFAULT_EDGE_KWS = dict(
+    color="black", linewidth=0.5, clip_on=False, capstyle="round", zorder=10
+)
+
+# LABELS
+DEFAULT_LABEL_KWS = dict(
     horizontalalignment="left", verticalalignment="center", fontsize=8
 )
 
@@ -165,24 +175,30 @@ def compute_tree_layout(
 def plot_tree(
     tree: dp.Tree,
     has_brlens: bool = True,
-    edge_kws: dict = default_edge_kws,
-    leaf_kws: dict = default_leaf_kws,
-    internal_kws: dict = default_internal_kws,
+    edge_kws: dict = DEFAULT_EDGE_KWS,
+    leaf_kws: dict = DEFAULT_LEAF_KWS,
+    internal_kws: dict = DEFAULT_INTERNAL_KWS,
     ax: mp.axes.Axes = None,
     labels: Optional[Union[Iterable[str], Literal["all"]]] = None,
-    label_kws: dict = default_label_kws,
+    label_kws: dict = DEFAULT_LABEL_KWS,
     compute_layout: bool = True,
     fill_dotted_lines: bool = False,
+    color_leaves_by_site_aa: Optional[int] = None,
+    color_internal_nodes_by_site_aa: Optional[int] = None,
+    sequences: Optional[dict[str, str]] = None,
+    jitter_x: Optional[float | str] = None,
+    scale_bar: Optional[bool] = True,
 ) -> mp.axes.Axes:
-    """Plot a dendropy tree object.
+    """
+    Plot a dendropy tree object.
 
-    Tree nodes are plotted in their current order. So, to ladderize, call
-    tree.ladderize() before plotting.
+    Tree nodes are plotted in their current order. So, to ladderize, call tree.ladderize() before
+    plotting.
 
     Args:
         tree
-        has_brlens: Does the tree have branch lengths? If not, all
-            branch lengths are plotted length 1.
+        has_brlens: Does the tree have branch lengths? If not, all branch lengths are plotted
+            length 1.
         edge_kws: Keyword arguments for edges, passed to
             matplotlib.collections.LineCollection
         leaf_kws: Keyword arguments for leafs, passed to ax.scatter.
@@ -196,8 +212,20 @@ def plot_tree(
         labels: Taxon labels to annotate, or "all".
         compute_layout. Compute the layout or not. If the tree nodes
             already have _x and _y attributes, then just plot.
-        fill_dotted_lines: Show dotted lines from leaves to the right hand edge of the
-            tree.
+        fill_dotted_lines: Show dotted lines from leaves to the right hand edge of the tree.
+        color_leaves_by_site_aa: Pass an integer to color the leaves by the amino acid at this site
+            (1-based). This will overwrite the 'c' kwarg in leaf_kws. `sequences` must be passed.
+        color_internal_nodes_by_site_aa: Same behaviour as color_leaves_by_site_aa but for internal
+            nodes.
+        sequences: A mapping of taxon labels and to sequences. Required for
+            `color_leaves_by_site_aa`.
+        jitter_x: Add a small amount of noise to the x value of the leaves to avoid over plotting.
+            Either pass a float (the amount of noise) or 'auto' to try to automatically calculate a
+            suitable value. 'auto' tries to calculate the fundamental 'unit' of branch length in the
+            tree and then jitters x values by 1/2 of this value in either direction. See
+            estimate_unit_branch_length for more information. Currently, positions of labels are
+            not jittered.
+        scale_bar: Show a scale bar at the bottom of the tree.
 
     Returns:
         tuple containing (Tree, ax). The tree and matplotlib ax. The tree has
@@ -214,15 +242,16 @@ def plot_tree(
     """
     ax = plt.gca() if ax is None else ax
 
-    if isinstance(labels, str) and labels == "all":
+    if labels == "all":
         labels = [node.taxon.label for node in tree.leaf_nodes()]
+
     elif labels is None:
         labels = []
 
-    label_kws = {**default_label_kws, **label_kws}
-    leaf_kws = {**default_leaf_kws, **leaf_kws}
-    edge_kws = {**default_edge_kws, **edge_kws}
-    internal_kws = {**default_internal_kws, **internal_kws}
+    label_kws = {**DEFAULT_LABEL_KWS, **label_kws}
+    leaf_kws = {**DEFAULT_LEAF_KWS, **leaf_kws}
+    edge_kws = {**DEFAULT_EDGE_KWS, **edge_kws}
+    internal_kws = {**DEFAULT_INTERNAL_KWS, **internal_kws}
 
     tree = compute_tree_layout(tree, has_brlens) if compute_layout else tree
 
@@ -239,9 +268,9 @@ def plot_tree(
             min_y = min(node._y for node in node.child_node_iter())
             edges.append(((node._x, max_y), (node._x, min_y)))
 
-    lc = mp.collections.LineCollection(segments=edges, **edge_kws)
-    ax.add_artist(lc)
+    ax.add_artist(mp.collections.LineCollection(segments=edges, **edge_kws))
 
+    # Dotted lines from the leaves to the right hand edge of the tree
     if fill_dotted_lines:
         max_x = max(node._x for node in tree.leaf_nodes())
         dotted_edges = [
@@ -253,22 +282,62 @@ def plot_tree(
             )
         )
 
+    # Infer suitable jitter_x value if need be
+    if jitter_x == "auto":
+        jitter_x = estimate_unit_branch_length(
+            [edge.length for edge in tree.edges() if edge.length is not None]
+        )
+        logging.info(f"Auto jitter_x: {jitter_x}")
+
     # Draw leaves
-    ax.scatter(
-        tuple(node._x for node in tree.leaf_node_iter()),
-        tuple(node._y for node in tree.leaf_node_iter()),
-        marker=[[-2, -1], [-2, 1], [0, 1], [0, -1]],
-        clip_on=False,
-        **leaf_kws,
-    )
+    if color_leaves_by_site_aa is not None:
+
+        # Group leaves by amino acid at site so that each group can be colored and a label passed
+        # for the legend.
+
+        def _get_aa(node):
+            """
+            Temporary helper function to get the amino acid at the site. Passed to sorted and
+            itertools.groupby to group leaves regardless of input order.
+            """
+            return sequences[node.taxon.label][color_leaves_by_site_aa - 1]
+
+        # Make groups of nodes that all have a particular amino acid at the site
+        sorted_nodes = sorted(tree.leaf_node_iter(), key=_get_aa)
+        aa_groups = {
+            aa: list(nodes)
+            for aa, nodes in itertools.groupby(sorted_nodes, key=_get_aa)
+        }
+
+        # Order the groups by size so that the smallest groups are plotted last to make them more
+        # visible. Put unknown amino acids at the back
+        for aa in reversed(
+            sorted(
+                aa_groups,
+                key=lambda aa: len(aa_groups[aa]) if aa != "X" else 0,
+            )
+        ):
+            nodes = aa_groups[aa]
+            leaf_kws["color"] = amino_acid_colors[aa]
+            x, y = node_x_y(nodes, jitter_x=jitter_x)
+            ax.scatter(x, y, **leaf_kws, label=aa if aa != "X" else None)
+
+    else:
+        x, y = node_x_y(tree.leaf_node_iter(), jitter_x=jitter_x)
+        ax.scatter(x, y, **leaf_kws)
 
     # Draw internal nodes
+    if color_internal_nodes_by_site_aa is not None:
+        internal_kws["color"] = [
+            amino_acid_colors[
+                sequences[node.label][color_internal_nodes_by_site_aa - 1]
+            ]
+            for node in tree.internal_nodes()
+        ]
+
     if internal_kws:
-        ax.scatter(
-            tuple(node._x for node in tree.internal_nodes()),
-            tuple(node._y for node in tree.internal_nodes()),
-            **internal_kws,
-        )
+        x, y = node_x_y(tree.internal_nodes())
+        ax.scatter(x, y, **internal_kws)
 
     # Labels
 
@@ -312,6 +381,13 @@ def plot_tree(
     else:
         raise ValueError("couldn't process labels")
 
+    if scale_bar:
+        length = tree._xlim[1] / 10
+        length = float(f"{length:.1g}")  # round length to 1 significant figure
+        bottom = tree._ylim[1]
+        ax.plot((0, length), (bottom, bottom), c="black", lw=1, clip_on=False)
+        ax.text(length / 2, bottom, str(length), ha="center", va="bottom")
+
     # Finalise
     ax.set_xlim(tree._xlim)
     ax.set_ylim(tree._ylim)
@@ -320,6 +396,29 @@ def plot_tree(
     ax.invert_yaxis()
 
     return tree, ax
+
+
+def node_x_y(
+    nodes: Iterable[dp.Node], jitter_x: Optional[float] = None
+) -> tuple[tuple, tuple]:
+    """
+    x and y coordinates of nodes.
+
+    Args:
+        nodes (Iterable[dp.Node]): An iterable collection of dp.Node objects.
+        jitter_x (Optional[float]): The amount of jitter to add to x coordinates. X is jittered
+            by a quarter of this value above and below.
+
+    Returns:
+        tuple[tuple, tuple]: A tuple containing two tuples, the first with all x coordinates and the
+            second with all y coordinates.
+    """
+    if jitter_x is None:
+        return zip(*((node._x, node._y) for node in nodes))
+    else:
+        lo = -jitter_x / 4
+        hi = jitter_x / 4
+        return zip(*((node._x + random.uniform(lo, hi), node._y) for node in nodes))
 
 
 def plot_leaves_with_labels(
@@ -443,7 +542,8 @@ def plot_subs_on_tree(
 
 
 def get_label(node: dp.Node):
-    """Return the label of a node. If the node itself has a label, use that. Otherwise
+    """
+    Return the label of a node. If the node itself has a label, use that. Otherwise
     return the label of the node's taxon.
     """
     if node.label is not None:
@@ -469,7 +569,8 @@ def taxon_in_node_label(label, node):
 
 
 def get_trunk(tree, attr="_x"):
-    """Ordered nodes in tree, from deepest leaf to root.
+    """
+    Ordered nodes in tree, from deepest leaf to root.
 
     Args:
         tree (dendropy Tree)
@@ -487,7 +588,8 @@ def get_trunk(tree, attr="_x"):
 
 
 def deepest_leaf(tree, attr="_x"):
-    """Find the deepest leaf node in the tree.
+    """
+    Find the deepest leaf node in the tree.
 
     Args:
         tree (dendropy Tree)
@@ -507,7 +609,8 @@ def deepest_leaf(tree, attr="_x"):
 def read_iqtree_ancestral_states(
     state_file, partition_names: Optional[list[str]] = None, translate_nt: bool = False
 ) -> dict[str : dict[str, str]] | dict[str:str]:
-    """Read an ancestral state file generated by IQ-TREE. If the file contains multiple partitions
+    """
+    Read an ancestral state file generated by IQ-TREE. If the file contains multiple partitions
     (i.e. a 'Part' column is present), then return a dict of dicts containing sequences accessed by
     [partition][node]. Otherwise return a dict of sequences accessed by node.
 
@@ -544,7 +647,8 @@ def read_iqtree_ancestral_states(
 def read_raxml_ancestral_sequences(
     tree, node_labelled_tree, ancestral_seqs, leaf_seqs=None
 ):
-    """Read a tree and ancestral sequences estimated by RAxML.
+    """
+    Read a tree and ancestral sequences estimated by RAxML.
 
     RAxML can estimate marginal ancestral sequences for internal nodes on a
     tree using a call like:
@@ -768,7 +872,8 @@ def compare_trees(
 
 
 def prune_nodes_with_labels(tree, labels):
-    """Prune nodes from tree that have a taxon label in labels.
+    """
+    Prune nodes from tree that have a taxon label in labels.
 
     Args:
         tree (dendropy Tree)
@@ -949,3 +1054,39 @@ def color_stack(
     ax.add_artist(leg)
     ax.axis(False)
     return ax, leg
+
+
+def estimate_unit_branch_length(
+    branch_lengths: list[float], min_diff: float = 1e-6, round_to: int = 6
+) -> float:
+    """
+    Estimates the fundamental unit length in a set of phylogenetic branch lengths. Assumes that
+    branch lengths occur in approximate integer multiples of a small unit. Algorithm:
+
+        1. Compute all pairwise absolute differences between branch lengths.
+        2. Construct a histogram of these differences with an adaptive bin size.
+        3. Identify the most common small difference (mode of the histogram),
+        which represents the estimated unit length.
+
+    Args:
+        branch_lengths (list or np.array): A list of branch lengths.
+        min_diff (float): Minimum difference between branch lengths to consider. Branch length
+            differences smaller than this value are considered to be zero.
+        round_to (int): Round branch_lengths to this many decimal places.
+
+    Returns:
+        float: Estimated fundamental unit length.
+    """
+    branch_lengths = np.array([round(edge, round_to) for edge in branch_lengths])
+
+    # Compute pairwise absolute differences
+    diffs = np.abs(np.subtract.outer(branch_lengths, branch_lengths))
+    diffs = diffs[np.triu_indices_from(diffs, k=1)]  # Extract unique values
+    diffs = diffs[diffs > min_diff]  # Remove near-zero values
+
+    # Define bin width adaptively based on small quantile
+    bin_width = np.percentile(diffs, 1)
+    hist, bin_edges = np.histogram(diffs, bins=np.arange(0, np.max(diffs), bin_width))
+
+    # Find bin with the highest count (mode) and return it
+    return bin_edges[np.argmax(hist)]
