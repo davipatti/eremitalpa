@@ -891,10 +891,10 @@ def aa_counts_thru_time(df_seq: pd.DataFrame, site: int, ignore="-X") -> pd.Data
         pd.DataFrame(
             {
                 month: df_grp["aa"].str[site - 1].value_counts().sort_index()
-                for (month, df_grp) in df_seq.groupby(pd.Grouper(key="dt", freq="ME"))
+                for (month, df_grp) in df_seq.groupby(pd.Grouper(key="dt", freq="M"))
             }
         )
-        .T.resample("ME")  # Make sure we're not missing any months
+        .T.resample("M")  # Make sure we're not missing any months
         .asfreq()
         .fillna(0)
         .T
