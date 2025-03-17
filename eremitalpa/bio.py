@@ -1,5 +1,6 @@
 from collections import Counter, namedtuple
 from itertools import combinations, groupby
+from more_itertools import bucket, unzip
 from typing import Iterable, Generator, Any
 import random
 import warnings
@@ -535,3 +536,24 @@ def idx_first_and_last_non_gap(sequence: str) -> tuple[int, int]:
             break
 
     return first_non_gap, last_non_gap
+
+
+def group_sequences_by_character_at_site(
+    seqs: dict[str, str], site: int
+) -> dict[str, str]:
+    """
+    Group sequences by the character they have at a particular site.
+
+    Args:
+        seqs: Dict of sequence names -> sequence.
+        site: 1-based.
+
+    Returns:
+        dict containing `char at site` -> `sequence name`.
+    """
+    bucketed = bucket(seqs.items(), key=lambda x: x[1][site - 1])
+    grouped = {}
+    for amino_acid in bucketed:
+        libs, _ = unzip(bucketed[amino_acid])
+        grouped[amino_acid] = list(libs)
+    return grouped
