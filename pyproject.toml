@@ -1,7 +1,11 @@
+[build-system]
+requires = ["setuptools >= 77.0.3", "setuptools-scm >= 8"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "eremitalpa"
 description = "Plot dendropy trees"
-version = "1.1.5"
+dynamic = ["version"]
 authors = [{ name = "David Pattinson", email = "david.pattinson@wisc.edu" }]
 dependencies = [
     "adjustText",
@@ -35,3 +39,5 @@ ere-make-chimera = "eremitalpa.scripts.make_chimera:main"
 ere-plot-labelled-phylogeny = "eremitalpa.scripts.plot_labelled_phylogeny:main"
 ere-print-phylogeny-leaves = "eremitalpa.scripts.print_phylogeny_leaves:main"
 ere-write-iqtree-ancestral-seqs = "eremitalpa.scripts.write_iqtree_ancestral_seqs:main"
+
+[tool.setuptools_scm]

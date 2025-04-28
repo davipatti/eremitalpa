@@ -28,6 +28,7 @@ from .eremitalpa import (
     MultipleSequenceAlignment,
     plot_leaves_with_labels,
     plot_subs_on_tree,
+    plot_tree_with_subplots,
     plot_tree,
     prune_nodes_with_labels,
     read_iqtree_ancestral_states,
@@ -67,7 +68,12 @@ from .lib import (
 )
 from .spread_points import spread_points
 
-__version__ = "1.1.4"
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("eremitalpa")
+except PackageNotFoundError:
+    pass
 
 __all__ = [
     "__version__",
@@ -115,6 +121,7 @@ __all__ = [
     "plot_subs_on_tree",
     "plot_subs_on_tree",
     "plot_tree_coloured_by_cluster",
+    "plot_tree_with_subplots",
     "plot_tree",
     "prune_nodes_with_labels",
     "read_iqtree_ancestral_states",

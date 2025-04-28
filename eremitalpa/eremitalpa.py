@@ -1,6 +1,6 @@
 from collections import namedtuple, Counter, defaultdict
 from operator import attrgetter, itemgetter
-from typing import Optional, Generator, Iterable, Union, Literal, Any, Mapping
+from typing import Optional, Generator, Iterable, Union, Literal, Any, Mapping, Callable
 import itertools
 import logging
 import random
@@ -419,6 +419,21 @@ def node_x_y(
         lo = -jitter_x / 4
         hi = jitter_x / 4
         return zip(*((node._x + random.uniform(lo, hi), node._y) for node in nodes))
+
+
+def node_x_y_from_taxon_label(tree: Tree, taxon_label: str) -> tuple[float, float]:
+    """
+    Find the x and y attributes of a node in a tree from a taxon label.
+
+    Args:
+        tree: Tree
+        taxon_label: str
+
+    Returns:
+        tuple[float, float]
+    """
+    node = tree.find_node_with_taxon_label(taxon_label)
+    return node._x, node._y
 
 
 def plot_leaves_with_labels(
@@ -1090,3 +1105,109 @@ def estimate_unit_branch_length(
 
     # Find bin with the highest count (mode) and return it
     return bin_edges[np.argmax(hist)]
+
+
+def plot_tree_with_subplots(
+    tree: Tree,
+    aa_seqs: dict,
+    site: int,
+    subplot_taxa_shifts: dict[str, tuple[float, float]],
+    fun: Callable,
+    fun_kwds: Optional[dict] = None,
+    subplot_width: float = 0.2,
+    subplot_height: float = 0.1,
+    figsize: tuple[float, float] = (8, 12),
+    sharex: bool = True,
+    sharey: bool = True,
+) -> None:
+    """
+    Plot a phylogeny tree with subplots for specified taxa.
+
+    This function draws a phylogeny based on a given tree and amino acid sequences.
+    It colors leaves (and internal nodes) according to their amino acid at a specified site,
+    and attaches additional subplots at user-defined nodes for further custom visualization.
+
+    Args:
+        tree: eremitalpa.Tree
+            The phylogenetic tree to be plotted.
+        aa_seqs: dict
+            A dictionary containing amino acid sequences for each taxon.
+            Keys should match the node names in the tree, and values should be the sequences.
+        site: int
+            The site (1-based) to color the tree's leaves and internal nodes.
+        subplot_taxa_shifts: dict of str -> tuple of float
+            A mapping from taxon names to tuples (x_shift, y_shift).
+            These values control the position of the subplot axes relative to their respective nodes.
+        fun: Callable
+            A callable function to generate each subplot.
+            Must accept the current taxon as the first argument and an axes object as the second argument.
+        fun_kwds: dict
+            A dictionary of additional keyword arguments passed to the subplot function ``fun``.
+        subplot_width: float, optional
+            The width of each subplot in figure coordinates, by default 0.2.
+        subplot_height: float, optional
+            The height of each subplot in figure coordinates, by default 0.1.
+        figsize: tuple of float, optional
+            The overall size of the figure, by default (8, 12).
+        sharex: bool, Have the sub axes share x-axes.
+        sharey: bool, Have the sub axes share y-axes.
+
+    Returns:
+        None
+            The function draws and displays a matplotlib figure with the main phylogeny
+            and subplots at specified taxa. It does not return any objects.
+    """
+
+    fig, main_ax = plt.subplots(figsize=figsize)
+    plot_tree(
+        tree,
+        color_leaves_by_site_aa=site,
+        color_internal_nodes_by_site_aa=site,
+        sequences=aa_seqs,
+        leaf_kws=dict(s=8),
+        internal_kws=dict(s=2),
+        edge_kws=dict(lw=0.5, color="grey"),
+        jitter_x="auto",
+        ax=main_ax,
+    )
+    main_ax.legend(
+        markerscale=5, loc="lower left", bbox_to_anchor=(1.05, 0), title=f"Site {site}"
+    )
+
+    data_to_fig = (main_ax.transData + fig.transFigure.inverted()).transform
+
+    first_sub_ax = None
+
+    for taxon in subplot_taxa_shifts:
+        x, y = node_x_y_from_taxon_label(tree, taxon)
+
+        x_shift, y_shift = subplot_taxa_shifts.get(taxon, (0.1, 0.1))
+        x_shifted = x + tree._xlim[1] * x_shift
+        y_shifted = y + tree._ylim[1] * -y_shift
+
+        left, bottom = data_to_fig([x_shifted, y_shifted])
+
+        # Lines connecting root viruses to their sub axes
+        main_ax.plot(
+            (x, x_shifted), (y, y_shifted), c="black", lw=0.5, clip_on=False, zorder=16
+        )
+
+        # Big marker showing where the root virus is
+        main_ax.scatter(
+            x, y, c="black", s=40, clip_on=False, marker="*", zorder=16, lw=0
+        )
+
+        # Add the sub axes
+        position = left, bottom, subplot_width, subplot_height
+        if first_sub_ax is None:
+            sub_ax = plt.axes(position)
+            first_sub_ax = sub_ax
+        else:
+            sub_ax = plt.axes(
+                position,
+                sharex=first_sub_ax if sharex else False,
+                sharey=first_sub_ax if sharey else False,
+            )
+
+        fun_kwds = {} if fun_kwds is None else fun_kwds
+        fun(taxon, ax=sub_ax, **fun_kwds)
