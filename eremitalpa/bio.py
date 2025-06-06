@@ -9,6 +9,7 @@ from Bio import SeqIO
 from Bio.Align import PairwiseAligner
 from tqdm import tqdm
 import pandas as pd
+import matplotlib as mpl
 
 AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWY")
 
@@ -557,3 +558,18 @@ def group_sequences_by_character_at_site(
         libs, _ = unzip(bucketed[amino_acid])
         grouped[amino_acid] = list(libs)
     return grouped
+
+
+def plot_amino_acid_colors(ax: "matplotlib.axes.Axes" = None) -> "matplotlib.axes.Axes":
+    """
+    Simple plot to show amino acid colors.
+    """
+    ax = ax or mpl.pyplot.gca()
+    width = 0.5
+    for i, (aa, color) in enumerate(reversed(amino_acid_colors.items())):
+        patch = mpl.patches.Rectangle((0, i), width=width, height=1, facecolor=color)
+        ax.add_artist(patch)
+        ax.text(width + 0.01, i + 0.5, aa, va="center")
+    ax.set(ylim=(0, i + 1), xlim=(0, 2))
+    ax.axis(False)
+    return ax
