@@ -210,7 +210,7 @@ def plot_tree(
             length should match tree.internal_nodes().
         ax: Matplotlib ax.
         labels: Taxon labels to annotate, or "all".
-        compute_layout. Compute the layout or not. If the tree nodes
+        compute_layout: Compute the layout or not. If the tree nodes
             already have _x and _y attributes, then just plot.
         fill_dotted_lines: Show dotted lines from leaves to the right hand edge of the tree.
         color_leaves_by_site_aa: Pass an integer to color the leaves by the amino acid at this site
