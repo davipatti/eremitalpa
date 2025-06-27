@@ -485,6 +485,7 @@ def plot_subs_on_tree(
     arrow_length: float = 40,
     arrow_facecolor: str = "black",
     fontsize: float = 6,
+    xytext_transform: tuple[float, float] = (1.0, 1.0),
     **kwds,
 ) -> Counter:
     """
@@ -503,6 +504,7 @@ def plot_subs_on_tree(
         arrow_length (float): The length of the arrow pointing to the mutation.
         arrow_facecolor (str): The facecolor of the arrow pointing to the mutation.
         fontsize (float): The fontsize of the text.
+        xytext_transform (tuple(float, float)): Multipliers for the xytext offsets.
         **kwds: Other keyword arguments to pass to plt.annotate.
 
     Returns:
@@ -511,6 +513,11 @@ def plot_subs_on_tree(
     ignore = set(ignore_chars)
 
     sub_counts = Counter()
+
+    if not hasattr(next(tree.leaf_node_iter()), "_x"):
+        tree = compute_tree_layout(tree)
+
+    xytext = -arrow_length * xytext_transform[0], arrow_length * xytext_transform[1]
 
     for node in tree.nodes():
         if (parent := node.parent_node) and not (exclude_leaves and node.is_leaf()):
@@ -537,7 +544,7 @@ def plot_subs_on_tree(
             plt.annotate(
                 "\n".join(map(str, subs)),
                 (x, node._y),
-                xytext=(-arrow_length, arrow_length),
+                xytext=xytext,
                 va="bottom",
                 ha="right",
                 textcoords="offset pixels",
