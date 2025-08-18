@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import unittest
 from collections import Counter
-import random
 from operator import itemgetter
 from string import ascii_lowercase
+import os
+import random
+import unittest
 
 from Bio.Seq import Seq
 
@@ -437,6 +438,42 @@ class TestTiedCounter(unittest.TestCase):
             Counter("ababc").most_common(2),
             ere.TiedCounter("ababc").most_common(2),
         )
+
+
+class TestLoadFasta(unittest.TestCase):
+    def setUp(self):
+        self.fasta_content = ">seq1\nATGC\n>seq2\nTT-A\n"
+        self.fasta_path = "test.fasta"
+        with open(self.fasta_path, "w") as f:
+            f.write(self.fasta_content)
+
+    def tearDown(self):
+        os.remove(self.fasta_path)
+
+    def test_load_fasta(self):
+        expected = {"seq1": "ATGC", "seq2": "TT-A"}
+        self.assertEqual(expected, ere.load_fasta(self.fasta_path))
+
+    def test_translate_nt(self):
+        expected = {"seq1": "MX", "seq2": "XX"}
+        self.assertEqual(
+            expected,
+            ere.load_fasta(self.fasta_path, translate_nt=True)
+        )
+
+    def test_convert_to_upper(self):
+        self.fasta_content = ">seq1\natgc\n>seq2\ntt-a\n"
+        with open(self.fasta_path, "w") as f:
+            f.write(self.fasta_content)
+        expected = {"seq1": "ATGC", "seq2": "TT-A"}
+        self.assertEqual(
+            expected,
+            ere.load_fasta(self.fasta_path, convert_to_upper=True)
+        )
+
+    def test_start(self):
+        expected = {"seq1": "TGC", "seq2": "T-A"}
+        self.assertEqual(expected, ere.load_fasta(self.fasta_path, start=1))
 
 
 if __name__ == "__main__":

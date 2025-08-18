@@ -432,7 +432,10 @@ def variable_sites(
 
 
 def load_fasta(
-    path: str, translate_nt: bool = False, convert_to_upper: bool = False
+    path: str,
+    translate_nt: bool = False,
+    convert_to_upper: bool = False,
+    start: int = 0,
 ) -> dict[str, str]:
     """
     Load fasta file sequences.
@@ -441,11 +444,15 @@ def load_fasta(
         path: Path to fasta file.
         translate_nt: Translate nucleotide sequences.
         convert_to_upper: Force sequences to be uppercase.
+        start: The (0-based) index of the first character of each record to
+            take. This selection is done _before_ any translation. (Default=0).
     """
     with open(path) as fobj:
         seqs = {
             record.description: (
-                sloppy_translate(str(record.seq)) if translate_nt else str(record.seq)
+                sloppy_translate(str(record.seq)[start:])
+                if translate_nt
+                else str(record.seq)[start:]
             )
             for record in SeqIO.parse(fobj, format="fasta")
         }
