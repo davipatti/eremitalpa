@@ -309,8 +309,8 @@ def plot_tree(
             for aa, nodes in itertools.groupby(sorted_nodes, key=_get_aa)
         }
 
-        # Order the groups by size so that the smallest groups are plotted last to make them more
-        # visible. Put unknown amino acids at the back
+        # Order the groups by size so that the smallest groups are plotted last
+        # to make them more visible. Put unknown amino acids at the back
         for aa in reversed(
             sorted(
                 aa_groups,
@@ -1177,9 +1177,7 @@ def plot_tree_with_subplots(
         jitter_x="auto",
         ax=main_ax,
     )
-    main_ax.legend(
-        markerscale=5, loc="lower left", bbox_to_anchor=(1.05, 0), title=f"Site {site}"
-    )
+    main_ax.legend(markerscale=7, loc="lower left", fontsize=18, bbox_to_anchor=(-0.1, 0.025))
 
     data_to_fig = (main_ax.transData + fig.transFigure.inverted()).transform
 
@@ -1196,12 +1194,20 @@ def plot_tree_with_subplots(
 
         # Lines connecting root viruses to their sub axes
         main_ax.plot(
-            (x, x_shifted), (y, y_shifted), c="black", lw=0.5, clip_on=False, zorder=16
+            (x, x_shifted), (y, y_shifted), c="black", lw=1, clip_on=False, zorder=16
         )
 
         # Big marker showing where the root virus is
         main_ax.scatter(
-            x, y, c="black", s=40, clip_on=False, marker="*", zorder=16, lw=0
+            x,
+            y,
+            c="black",
+            s=100,
+            clip_on=False,
+            marker="o",
+            zorder=16,
+            lw=0.5,
+            ec="white",
         )
 
         # Add the sub axes
