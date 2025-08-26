@@ -1177,7 +1177,9 @@ def plot_tree_with_subplots(
         jitter_x="auto",
         ax=main_ax,
     )
-    main_ax.legend(markerscale=7, loc="lower left", fontsize=18, bbox_to_anchor=(-0.1, 0.025))
+    main_ax.legend(
+        markerscale=7, loc="lower left", fontsize=18, bbox_to_anchor=(-0.1, 0.025)
+    )
 
     data_to_fig = (main_ax.transData + fig.transFigure.inverted()).transform
 
