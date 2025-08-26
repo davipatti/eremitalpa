@@ -34,8 +34,9 @@ amino_acid_colors = {
     "T": "#049457",
     "V": "#00939f",
     "W": "#ED93BD",
-    "X": "#777777",  # unknown AA
+    "X": "#777777",  # Unknown AA
     "Y": "#a5b8c7",
+    "-": "#000000",  # Gap / insertion
 }
 
 
