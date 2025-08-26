@@ -126,6 +126,75 @@ class Tree(dp.Tree):
 
         return tree
 
+    def clade_bbox(self, taxon_labels: list[str]) -> dict[str, float]:
+        """
+        Calculate the bounding box of a clade.
+
+        The bounding box is determined by finding the most recent common ancestor (MRCA)
+        of the specified taxa and then calculating the minimum and maximum x and y coordinates
+        of its child nodes.
+
+        Args:
+            taxon_labels : list[str]
+                A list of taxon labels that define the clade.
+
+        Returns:
+            dict[str, float]
+                A dictionary containing the coordinates of the bounding box with keys:
+                - 'min_x': The minimum x-coordinate (left edge)
+                - 'max_x': The maximum x-coordinate (right edge)
+                - 'min_y': The minimum y-coordinate (bottom edge)
+                - 'max_y': The maximum y-coordinate (top edge)
+        """
+        mrca = self.mrca(taxon_labels=taxon_labels)
+        return {
+            "max_x": max(node._x for node in mrca.leaf_iter()),
+            "min_x": mrca._x,
+            "max_y": max(node._y for node in mrca.leaf_iter()),
+            "min_y": min(node._y for node in mrca.leaf_iter()),
+        }
+
+    def plot_clade_bbox(
+        self, taxon_labels: list[str], ax: Optional[mp.axes.Axes] = None, **kwds
+    ):
+        """
+        Plot a rectangle around the bounding box of a clade.
+
+        Args:
+            taxon_labels : list[str]
+                A list of taxon labels that define the clade.
+            ax : Optional[mp.axes.Axes]
+                The matplotlib axes to plot on. If None, uses the current axes.
+            **kwds : dict
+                Keyword arguments passed to matplotlib.patches.Rectangle.
+                Common options include: edgecolor, facecolor, alpha,
+                linewidth, linestyle, etc.
+
+            matplotlib.patches.Rectangle: The rectangle patch that was added to the axes.
+        """
+        ax = ax or plt.gca()
+        bbox = self.clade_bbox(taxon_labels)
+
+        default_kwds = dict(
+            edgecolor="black",
+            facecolor="#b3e2cd",
+            linewidth=1.5,
+            linestyle="-",
+            zorder=5,
+        )
+
+        rect_kwds = {**default_kwds, **kwds}
+
+        rect = mp.patches.Rectangle(
+            xy=(bbox["min_x"], bbox["min_y"]),
+            width=bbox["max_x"] - bbox["min_x"],
+            height=bbox["max_y"] - bbox["min_y"],
+            **rect_kwds,
+        )
+        ax.add_patch(rect)
+
+        return rect
+
 
 def compute_tree_layout(
     tree: dp.Tree, has_brlens: bool = True, copy: bool = False
