@@ -268,6 +268,7 @@ def plot_tree(
     sequences: Optional[dict[str, str]] = None,
     jitter_x: Optional[float | str] = None,
     scale_bar: Optional[bool] = True,
+    scale_bar_x_start: float = 0.0,
 ) -> mp.axes.Axes:
     """
     Plot a dendropy tree object.
@@ -306,6 +307,7 @@ def plot_tree(
             estimate_unit_branch_length for more information. Currently, positions of labels are
             not jittered.
         scale_bar: Show a scale bar at the bottom of the tree.
+        scale_bar_x_start: The leftmost x position of the scale bar.
 
     Returns:
         tuple containing (Tree, ax). The tree and matplotlib ax. The tree has
@@ -465,8 +467,21 @@ def plot_tree(
         length = tree._xlim[1] / 10
         length = float(f"{length:.1g}")  # round length to 1 significant figure
         bottom = tree._ylim[1]
-        ax.plot((0, length), (bottom, bottom), c="black", lw=1, clip_on=False)
-        ax.text(length / 2, bottom, str(length), ha="center", va="bottom")
+        ax.plot(
+            (scale_bar_x_start, scale_bar_x_start + length),
+            (bottom, bottom),
+            c="black",
+            lw=1,
+            clip_on=False,
+        )
+        ax.text(
+            scale_bar_x_start + (length / 2),
+            bottom,
+            str(length),
+            ha="center",
+            va="bottom",
+            clip_on=False,
+        )
 
     # Finalise
     ax.set_xlim(tree._xlim)
@@ -1206,7 +1221,8 @@ def plot_tree_with_subplots(
     figsize: tuple[float, float] = (8, 12),
     sharex: bool = True,
     sharey: bool = True,
-) -> None:
+    **kwds,
+) -> mp.axes.Axes:
     """
     Plot a phylogeny tree with subplots for specified taxa.
 
@@ -1238,11 +1254,10 @@ def plot_tree_with_subplots(
             The overall size of the figure, by default (8, 12).
         sharex: bool, Have the sub axes share x-axes.
         sharey: bool, Have the sub axes share y-axes.
+        **kwds: Passed to plot_tree.
 
     Returns:
-        None
-            The function draws and displays a matplotlib figure with the main phylogeny
-            and subplots at specified taxa. It does not return any objects.
+        matplotlib.axes.Axes - the main axes.
     """
 
     fig, main_ax = plt.subplots(figsize=figsize)
@@ -1251,14 +1266,20 @@ def plot_tree_with_subplots(
         color_leaves_by_site_aa=site,
         color_internal_nodes_by_site_aa=site,
         sequences=aa_seqs,
-        leaf_kws=dict(s=8),
-        internal_kws=dict(s=2),
-        edge_kws=dict(lw=0.5, color="grey"),
+        leaf_kws=dict(s=8, zorder=15),
+        internal_kws=dict(s=4),
+        edge_kws=dict(lw=0.5, color="darkgrey"),
         jitter_x="auto",
         ax=main_ax,
+        **kwds,
     )
     main_ax.legend(
-        markerscale=7, loc="lower left", fontsize=18, bbox_to_anchor=(-0.1, 0.025)
+        markerscale=6,
+        loc="lower left",
+        fontsize=14,
+        bbox_to_anchor=(-0.1, 0.025),
+        frameon=True,
+        framealpha=1,
     )
 
     data_to_fig = (main_ax.transData + fig.transFigure.inverted()).transform
@@ -1275,21 +1296,20 @@ def plot_tree_with_subplots(
         left, bottom = data_to_fig([x_shifted, y_shifted])
 
         # Lines connecting root viruses to their sub axes
-        main_ax.plot(
-            (x, x_shifted), (y, y_shifted), c="black", lw=1, clip_on=False, zorder=16
-        )
-
-        # Big marker showing where the root virus is
-        main_ax.scatter(
-            x,
-            y,
-            c="black",
-            s=100,
-            clip_on=False,
-            marker="o",
-            zorder=16,
-            lw=0.5,
-            ec="white",
+        main_ax.annotate(
+            "",
+            xy=(x, y),
+            xytext=(x_shifted, y_shifted),
+            zorder=20,
+            arrowprops=dict(
+                width=0.75,
+                headwidth=7,
+                headlength=7,
+                facecolor="black",
+                linewidth=0.2,
+                edgecolor="white",
+                clip_on=False,
+            ),
         )
 
         # Add the sub axes
@@ -1306,3 +1326,5 @@ def plot_tree_with_subplots(
 
         fun_kwds = {} if fun_kwds is None else fun_kwds
         fun(taxon, ax=sub_ax, **fun_kwds)
+
+    return main_ax
