@@ -155,25 +155,36 @@ class Tree(dp.Tree):
         }
 
     def plot_clade_bbox(
-        self, taxon_labels: list[str], ax: Optional[mp.axes.Axes] = None, **kwds
+        self,
+        taxon_labels: list[str],
+        ax: Optional[mp.axes.Axes] = None,
+        extend_right: float = 0.0,
+        extend_down: float = 0.0,
+        **kwds,
     ):
         """
         Plot a rectangle around the bounding box of a clade.
 
         Args:
-            taxon_labels : list[str]
-                A list of taxon labels that define the clade.
-            ax : Optional[mp.axes.Axes]
-                The matplotlib axes to plot on. If None, uses the current axes.
-            **kwds : dict
-                Keyword arguments passed to matplotlib.patches.Rectangle.
-                Common options include: edgecolor, facecolor, alpha,
-                linewidth, linestyle, etc.
+            taxon_labels: A list of taxon labels that define the clade.
+            ax: The matplotlib axes to plot on.
+            extend_right: Amount to extend the box to the right, in ax coordinates.
+            extend_down: Amount to extend the box down, in ax coordinates.
+            **kwds: Keyword arguments passed to matplotlib.patches.Rectangle.
 
             matplotlib.patches.Rectangle: The rectangle patch that was added to the axes.
         """
         ax = ax or plt.gca()
         bbox = self.clade_bbox(taxon_labels)
+
+        if extend_right != 0 or extend_down != 0:
+            ax_to_data = ax.transAxes + ax.transData.inverted()
+            origin = ax_to_data.transform([0, 0])
+
+            data_extend = ax_to_data.transform([extend_right, extend_down]) - origin
+
+            bbox["max_x"] += data_extend[0]
+            bbox["max_y"] -= data_extend[1]  # plot_tree calls invert_yaxis, hence '-='
 
         default_kwds = dict(
             edgecolor="black",
