@@ -523,6 +523,7 @@ def node_x_y(
     if jitter_x is None:
         return zip(*((node._x, node._y) for node in nodes))
     else:
+        random.seed(42)
         lo = -jitter_x / 4
         hi = jitter_x / 4
         return zip(*((node._x + random.uniform(lo, hi), node._y) for node in nodes))
@@ -1235,6 +1236,7 @@ def plot_tree_with_subplots(
     sharey: bool = True,
     snap_x: Optional[float] = None,
     snap_y: Optional[float] = None,
+    arrow_origins: Optional[dict[str, tuple[float, float]]] = None,
     **kwds,
 ) -> mp.axes.Axes:
     """
@@ -1255,6 +1257,7 @@ def plot_tree_with_subplots(
         subplot_taxa_shifts: dict of str -> tuple of float
             A mapping from taxon names to tuples (dx, dy).
             These values control the position of the subplot axes relative to their respective nodes.
+            Uses axes coordinates (i.e. a value of 1 would shift an entire ax worth of distance).
         fun: Callable
             A callable function to generate each subplot.
             Must accept the current taxon as the first argument and an axes object as the second argument.
@@ -1272,10 +1275,14 @@ def plot_tree_with_subplots(
             sets the grid size.
         snap_y: float, Snap y position of the subplots to a grid. This argument
             sets the grid size.
+        arrow_origins: dict of str -> tuple of float. Pass the axes coordinates of each subplot for where
+            its arrow should originate. By default arrows originate from the center.
         **kwds: Passed to plot_tree.
 
     Returns:
-        matplotlib.axes.Axes - the main axes.
+        2-tuple containing:
+            matplotlib.axes.Axes - the main axes.
+            dict [str, matplotlib.axes.Axes] containing sub plots.
     """
 
     fig, main_ax = plt.subplots(figsize=figsize)
@@ -1298,47 +1305,32 @@ def plot_tree_with_subplots(
         bbox_to_anchor=(-0.1, 0.025),
         frameon=True,
         framealpha=1,
+        title=site,
+        title_fontsize=14,
     )
 
     data_to_fig = (main_ax.transData + fig.transFigure.inverted()).transform
-
     first_sub_ax = None
+    arrow_origins = arrow_origins or {}
+
+    sub_plots = {}
 
     for taxon in subplot_taxa_shifts:
         x, y = node_x_y_from_taxon_label(tree, taxon)
 
         # Position of ax is the x,y position of the taxa plus a shift
-        dx, dy = subplot_taxa_shifts.get(taxon, (0.1, 0.1))
-        x_ax = x + tree._xlim[1] * dx
-        y_ax = y + tree._ylim[1] * -dy
+        shift = subplot_taxa_shifts.get(taxon, (0.1, 0.1))
+        subplot_left, subplot_bottom = data_to_fig((x, y)) + shift
 
+        # Snapping
         if snap_x is not None:
-            x_ax = snap(x_ax, grid_size=snap_x)
+            subplot_left = snap(subplot_left, grid_size=snap_x)
 
         if snap_y is not None:
-            y_ax = snap(y_ax, grid_size=snap_y)
-
-        left, bottom = data_to_fig([x_ax, y_ax])
-
-        # Lines connecting root viruses to their sub axes
-        main_ax.annotate(
-            "",
-            xy=(x, y),
-            xytext=(x_ax, y_ax),
-            zorder=20,
-            arrowprops=dict(
-                width=0.75,
-                headwidth=7,
-                headlength=7,
-                facecolor="black",
-                linewidth=0.2,
-                edgecolor="white",
-                clip_on=False,
-            ),
-        )
+            subplot_bottom = snap(subplot_bottom, grid_size=snap_y)
 
         # Add the sub axes
-        position = left, bottom, subplot_width, subplot_height
+        position = subplot_left, subplot_bottom, subplot_width, subplot_height
         if first_sub_ax is None:
             sub_ax = plt.axes(position)
             first_sub_ax = sub_ax
@@ -1349,10 +1341,34 @@ def plot_tree_with_subplots(
                 sharey=first_sub_ax if sharey else False,
             )
 
-        fun_kwds = {} if fun_kwds is None else fun_kwds
-        fun(taxon, ax=sub_ax, **fun_kwds)
+        sub_plots[taxon] = sub_ax
 
-    return main_ax
+        # Plot the subplot
+        fun(taxon, ax=sub_ax, **(fun_kwds or {}))
+
+        # Arrow from the subplot to the relevant taxa in the tree
+        # Want arrow to originate from the center of the subplots.
+        # So, need a transform that goes from the center the subplot
+        # axes coordinates to the main ax data coordinates
+        transform = (sub_ax.transAxes + main_ax.transData.inverted()).transform
+        origin = arrow_origins.get(taxon, (0.5, 0.5))
+        main_ax.annotate(
+            "",
+            xy=(x, y),
+            xytext=transform(origin),
+            zorder=20,
+            arrowprops=dict(
+                width=1,
+                headwidth=7,
+                headlength=7,
+                facecolor="black",
+                linewidth=0.3,
+                edgecolor="white",
+                clip_on=False,
+            ),
+        )
+
+    return main_ax, sub_plots
 
 
 def snap(value: float, grid_size: float) -> float:
