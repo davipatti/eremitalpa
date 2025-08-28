@@ -1233,6 +1233,8 @@ def plot_tree_with_subplots(
     figsize: tuple[float, float] = (8, 12),
     sharex: bool = True,
     sharey: bool = True,
+    snap_x: Optional[float] = None,
+    snap_y: Optional[float] = None,
     **kwds,
 ) -> mp.axes.Axes:
     """
@@ -1251,7 +1253,7 @@ def plot_tree_with_subplots(
         site: int
             The site (1-based) to color the tree's leaves and internal nodes.
         subplot_taxa_shifts: dict of str -> tuple of float
-            A mapping from taxon names to tuples (x_shift, y_shift).
+            A mapping from taxon names to tuples (dx, dy).
             These values control the position of the subplot axes relative to their respective nodes.
         fun: Callable
             A callable function to generate each subplot.
@@ -1266,6 +1268,10 @@ def plot_tree_with_subplots(
             The overall size of the figure, by default (8, 12).
         sharex: bool, Have the sub axes share x-axes.
         sharey: bool, Have the sub axes share y-axes.
+        snap_x: float, Snap x position of the subplots to a grid. This argument
+            sets the grid size.
+        snap_y: float, Snap y position of the subplots to a grid. This argument
+            sets the grid size.
         **kwds: Passed to plot_tree.
 
     Returns:
@@ -1301,17 +1307,24 @@ def plot_tree_with_subplots(
     for taxon in subplot_taxa_shifts:
         x, y = node_x_y_from_taxon_label(tree, taxon)
 
-        x_shift, y_shift = subplot_taxa_shifts.get(taxon, (0.1, 0.1))
-        x_shifted = x + tree._xlim[1] * x_shift
-        y_shifted = y + tree._ylim[1] * -y_shift
+        # Position of ax is the x,y position of the taxa plus a shift
+        dx, dy = subplot_taxa_shifts.get(taxon, (0.1, 0.1))
+        x_ax = x + tree._xlim[1] * dx
+        y_ax = y + tree._ylim[1] * -dy
 
-        left, bottom = data_to_fig([x_shifted, y_shifted])
+        if snap_x is not None:
+            x_ax = snap(x_ax, grid_size=snap_x)
+
+        if snap_y is not None:
+            y_ax = snap(y_ax, grid_size=snap_y)
+
+        left, bottom = data_to_fig([x_ax, y_ax])
 
         # Lines connecting root viruses to their sub axes
         main_ax.annotate(
             "",
             xy=(x, y),
-            xytext=(x_shifted, y_shifted),
+            xytext=(x_ax, y_ax),
             zorder=20,
             arrowprops=dict(
                 width=0.75,
@@ -1340,3 +1353,10 @@ def plot_tree_with_subplots(
         fun(taxon, ax=sub_ax, **fun_kwds)
 
     return main_ax
+
+
+def snap(value: float, grid_size: float) -> float:
+    """
+    Find the closest point on a grid for a value.
+    """
+    return round(value / grid_size) * grid_size
