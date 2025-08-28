@@ -160,6 +160,8 @@ class Tree(dp.Tree):
         ax: Optional[mp.axes.Axes] = None,
         extend_right: float = 0.0,
         extend_down: float = 0.0,
+        label: Optional[str] = None,
+        label_kwds: Optional[dict] = None,
         **kwds,
     ):
         """
@@ -170,8 +172,11 @@ class Tree(dp.Tree):
             ax: The matplotlib axes to plot on.
             extend_right: Amount to extend the box to the right, in ax coordinates.
             extend_down: Amount to extend the box down, in ax coordinates.
+            label: Label to apply to the box.
+            label_kwds: Passed to matplotlib.axes.Axes.text
             **kwds: Keyword arguments passed to matplotlib.patches.Rectangle.
 
+        Returns:
             matplotlib.patches.Rectangle: The rectangle patch that was added to the axes.
         """
         ax = ax or plt.gca()
@@ -184,9 +189,11 @@ class Tree(dp.Tree):
             data_extend = ax_to_data.transform([extend_right, extend_down]) - origin
 
             bbox["max_x"] += data_extend[0]
-            bbox["max_y"] -= data_extend[1]  # plot_tree calls invert_yaxis, hence '-='
 
-        default_kwds = dict(
+            # plot_tree calls invert_yaxis, up is down, hence '-='
+            bbox["max_y"] -= data_extend[1]
+
+        default_rect_kwds = dict(
             edgecolor="black",
             facecolor="#b3e2cd",
             linewidth=1.5,
@@ -194,7 +201,7 @@ class Tree(dp.Tree):
             zorder=5,
         )
 
-        rect_kwds = {**default_kwds, **kwds}
+        rect_kwds = {**default_rect_kwds, **kwds}
 
         rect = mp.patches.Rectangle(
             xy=(bbox["min_x"], bbox["min_y"]),
@@ -203,6 +210,11 @@ class Tree(dp.Tree):
             **rect_kwds,
         )
         ax.add_patch(rect)
+
+        if label is not None:
+            default_label_kwds = dict(zorder=6, fontsize=10, va="bottom")
+            label_kwds = {**default_label_kwds, **(label_kwds or {})}
+            ax.text(bbox["min_x"], bbox["max_y"], label, **label_kwds)
 
         return rect
 
