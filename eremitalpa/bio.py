@@ -114,14 +114,14 @@ TRANSLATION_TABLE["---"] = "-"
 def sloppy_translate(sequence):
     """Translate a nucleotide sequence.
 
-    Don't check that the sequence length is a multiple of three. If any 'codon'
-    contains any character not in [ACTG] then return X.
+    Doesn't check that the sequence length is a multiple of three. If any
+    'codon' contains any character not in [ACTG] then return X.
 
     Args:
         sequence (str): Lower or upper case.
 
     Returns:
-        (str)
+        str: The translated sequence.
     """
     sequence = sequence.upper()
     peptide = []
@@ -145,17 +145,15 @@ def find_substitutions(a, b, offset=0):
     """Find mutations between strings a and b.
 
     Args:
-        a (str)
-        b (str)
-        offset (int)
+        a (str): The first string.
+        b (str): The second string.
+        offset (int): An offset to be added to the mutation position.
 
     Raises:
-        ValueError if lengths of a an b differ.
+        ValueError: If lengths of a and b differ.
 
     Returns:
-        list of tuples. tuples are like: ("N", 145, "K") The number indicates
-            the 1-indexed position of the mutation. The first element is the a
-            character. The last element is the b character.
+        tuple[Substitution, ...]: A tuple of Substitution objects.
     """
     if len(a) != len(b):
         raise ValueError("a and b must have same length")
@@ -168,11 +166,20 @@ def find_substitutions(a, b, offset=0):
 
 
 class Substitution:
+    """A change of a character at a site."""
+
     def __init__(self, *args):
-        """Change of a character at a site.
+        """Initializes a Substitution object.
 
         Instantiate using either 1 or three arguments:
             Substitution("N145K") or Substitution("N", 145, "K")
+
+        Args:
+            *args: Either a single string like "N145K" or three arguments
+                ("N", 145, "K").
+
+        Raises:
+            ValueError: If the number of arguments is not 1 or 3.
         """
         if len(args) == 1:
             arg = args[0]
@@ -219,20 +226,20 @@ def hamming_dist(
     case_sensitive: bool = True,
     per_site: bool = False,
 ) -> float:
-    """
-    The hamming distance between a and b.
+    """Computes the Hamming distance between two sequences.
 
     Args:
-        a: Sequence.
-        b: Sequence.
-        ignore: String containing characters to ignore. If there is a
-            mismatch where one string has a character in ignore, this does not
-            contribute to the hamming distance.
-        per_site: Divide the hamming distance by the length of a and b,
-            minus the number of sites with ignored characters.
+        a (str): The first sequence.
+        b (str): The second sequence.
+        ignore (Iterable[str]): A string containing characters to ignore.
+            Mismatches involving these characters will not contribute to the
+            Hamming distance.
+        case_sensitive (bool): If True, the comparison is case-sensitive.
+        per_site (bool): If True, the Hamming distance is divided by the
+            length of the sequences, excluding ignored sites.
 
     Returns:
-        float
+        float: The Hamming distance.
     """
     if len(a) != len(b):
         raise ValueError(
@@ -263,18 +270,19 @@ def hamming_dist(
 
 
 def hamming_dist_lt(a, b, n, ignore=None):
-    """
-    Test if hamming distance between a and b is less than n. This is case
-    sensitive and does not check a and b have matching lengths.
+    """Checks if the Hamming distance between two iterables is less than n.
+
+    This is case-sensitive and does not check if a and b have matching
+    lengths.
 
     Args:
-        a (iterable)
-        b (iterable)
-        n (scalar)
-        ignore (set or None)
+        a (iterable): The first iterable.
+        b (iterable): The second iterable.
+        n (scalar): The threshold value.
+        ignore (set or None): A set of characters to ignore during comparison.
 
     Returns:
-        bool
+        bool: True if the Hamming distance is less than n, False otherwise.
     """
     ignore = set() if ignore is None else ignore
     hd = 0
@@ -287,13 +295,15 @@ def hamming_dist_lt(a, b, n, ignore=None):
 
 
 def pairwise_hamming_dists(collection, ignore="-X", per_site=False):
-    """Compute all pairwise hamming distances between items in collection.
+    """Computes all pairwise Hamming distances between items in a collection.
 
     Args:
-        collection (iterable)
+        collection (iterable): A collection of sequences.
+        ignore (str): Characters to ignore during comparison.
+        per_site (bool): Whether to calculate per-site distance.
 
     Returns:
-        list of hamming distances
+        list[float]: A list of Hamming distances.
     """
     return [
         hamming_dist(a, b, ignore=ignore, per_site=per_site)
@@ -302,15 +312,15 @@ def pairwise_hamming_dists(collection, ignore="-X", per_site=False):
 
 
 def grouped_sample(population, n, key=None):
-    """Randomly sample a population taking at most n elements from each group.
+    """Randomly samples a population, taking at most n elements from each group.
 
     Args:
-        population (iterable)
-        n (int): Take at most n samples from each group.
-        key (callable): Function by which to group elements. Default (None).
+        population (iterable): The population to sample from.
+        n (int): The maximum number of samples to take from each group.
+        key (callable, optional): A function to group elements by. Defaults to None.
 
     Returns:
-        list
+        list: The sampled elements.
     """
     sample = []
     population = sorted(population, key=key)
@@ -324,17 +334,19 @@ def grouped_sample(population, n, key=None):
 
 
 def filter_similar_hd(sequences, n, progress_bar=False, ignore=None):
-    """
-    Iterate through sequences excluding those that have a hamming distance of
-    less than n to a sequence already seen. Return the non-excluded sequences.
+    """Filters sequences based on Hamming distance.
+
+    Iterates through sequences, excluding those that have a Hamming distance
+    of less than n to a sequence already seen.
 
     Args:
-        sequences (iterable of str / Bio.SeqRecord)
-        progress_bar (bool)
-        ignore (set or None)
+        sequences (iterable[str | Bio.SeqRecord]): The sequences to filter.
+        n (int): The Hamming distance threshold.
+        progress_bar (bool): Whether to display a progress bar.
+        ignore (set, optional): Characters to ignore during comparison. Defaults to None.
 
     Returns:
-        list
+        list: The filtered sequences.
     """
     if n == 0:
         return list(sequences)
@@ -352,11 +364,20 @@ def filter_similar_hd(sequences, n, progress_bar=False, ignore=None):
 
 
 class TiedCounter(Counter):
+    """A Counter that handles ties in most_common(1)."""
+
     def most_common(self, n: int | None = None) -> list[tuple[Any, int]]:
-        """
-        If n=1 and there are more than one item that has the maximum count, return all of
-        them, not just one. If n is not 1, do the same thing as normal
-        Counter.most_common.
+        """Returns the most common elements.
+
+        If n=1 and there is a tie for the most common element, all tied
+        elements are returned. Otherwise, it behaves like Counter.most_common.
+
+        Args:
+            n (int, optional): The number of most common elements to return.
+                Defaults to None.
+
+        Returns:
+            list[tuple[Any, int]]: A list of the most common elements and their counts.
         """
         if n == 1:
             max_value = max(self.values())
@@ -368,15 +389,18 @@ class TiedCounter(Counter):
 def _generate_consensus_chars(
     seqs: tuple[str], error_without_strict_majority=True
 ) -> Generator[str, None, None]:
-    """
-    Generator called by consensus_seq. This yields successive consensus characters
-    from a collection of sequences.
+    """Generates consensus characters from a collection of sequences.
+
+    This is a generator called by consensus_seq.
 
     Args:
-        seqs: Sequences. Must be the same length.
-        error_without_strict_majority: Raise an error if a position has a tied most
-            common character. If set to False, a warning is raised and a single value
-            is chosen.
+        seqs (tuple[str]): A tuple of sequences. Must be the same length.
+        error_without_strict_majority (bool): If True, raises an error if a
+            position has a tied most common character. If False, a warning is
+            raised and one of the tied characters is chosen.
+
+    Yields:
+        str: The next consensus character.
     """
     if len(set(map(len, seqs))) != 1:
         raise ValueError("seqs differ in length")
@@ -397,15 +421,17 @@ def _generate_consensus_chars(
 
 
 def consensus_seq(seqs: Iterable[str], case_sensitive: bool = True, **kwds) -> str:
-    """
-    Compute the consensus of sequences.
+    """Computes the consensus of a set of sequences.
 
     Args:
-        seqs: Sequences.
-        case_sensitive: If False, all seqs are converted to lowercase.
-        error_without_strict_majority: Raise an error if a position has a tied most
-            common character. If set to False, a warning is raised and a single value
-            is chosen.
+        seqs (Iterable[str]): The sequences to compute the consensus from.
+        case_sensitive (bool): If False, all sequences are converted to
+            lowercase.
+        **kwds: Additional keyword arguments passed to
+            _generate_consensus_chars.
+
+    Returns:
+        str: The consensus sequence.
     """
     seqs = tuple(seq.lower() for seq in seqs) if not case_sensitive else tuple(seqs)
     return "".join(_generate_consensus_chars(seqs, **kwds))
@@ -414,14 +440,16 @@ def consensus_seq(seqs: Iterable[str], case_sensitive: bool = True, **kwds) -> s
 def variable_sites(
     seq: pd.Series, max_biggest_prop: float = 0.95, ignore: str = "-X"
 ) -> Generator[int, None, None]:
-    """
-    Find variable sites among sequences. Returns 1-indexed sites.
+    """Finds variable sites among sequences.
 
     Args:
-        seq: Sequences.
-        max_biggest_prop: Don't include sites where a single character has a proportion
-            above this.
-        ignore: Characters to exclude when calculating proportions.
+        seq (pd.Series): A pandas Series of sequences.
+        max_biggest_prop (float): The maximum proportion for the most common
+            character at a site for it to be considered variable.
+        ignore (str): Characters to ignore when calculating proportions.
+
+    Yields:
+        int: The 1-indexed position of the next variable site.
     """
     ignore = set(ignore)
     df = seq.str.split("", expand=True)
@@ -438,15 +466,19 @@ def load_fasta(
     convert_to_upper: bool = False,
     start: int = 0,
 ) -> dict[str, str]:
-    """
-    Load fasta file sequences.
+    """Loads sequences from a FASTA file.
 
     Args:
-        path: Path to fasta file.
-        translate_nt: Translate nucleotide sequences.
-        convert_to_upper: Force sequences to be uppercase.
-        start: The (0-based) index of the first character of each record to
-            take. This selection is done _before_ any translation. (Default=0).
+        path (str): The path to the FASTA file.
+        translate_nt (bool): If True, translate nucleotide sequences to amino
+            acids.
+        convert_to_upper (bool): If True, convert sequences to uppercase.
+        start (int): The 0-based index of the first character to include from
+            each sequence. This is applied before translation.
+
+    Returns:
+        dict[str, str]: A dictionary mapping sequence descriptions to
+            sequences.
     """
     with open(path) as fobj:
         seqs = {
@@ -462,12 +494,12 @@ def load_fasta(
 
 
 def write_fasta(path: str, records: dict[str, str]) -> None:
-    """
-    Write a fasta file.
+    """Writes sequences to a FASTA file.
 
     Args:
-        path: Path to fasta file to write.
-        records: A dict, the keys will become fasta headers, values will be sequences.
+        path (str): The path to the output FASTA file.
+        records (dict[str, str]): A dictionary where keys are sequence headers
+            and values are the sequences.
     """
     with open(path, "w") as fobj:
         for header, sequence in records.items():
@@ -480,21 +512,18 @@ ReferenceAlignment = namedtuple(
 
 
 def align_to_reference(reference_seq: str, input_seq: str) -> ReferenceAlignment:
-    """
-    Align an input sequence to a reference. Returns the aligned input sequence trimmed to the region
-    of the reference.
+    """Aligns an input sequence to a reference sequence.
+
+    Returns the aligned input sequence trimmed to the region of the reference.
 
     Args:
-        reference_seq (str):
-        input_seq (str):
-
-    Raises:
-        ValueError: If internal gaps are introduced in the reference during alignment.
+        reference_seq (str): The reference sequence.
+        input_seq (str): The input sequence to align.
 
     Returns:
-        ReferenceAlignment tuple containing:
-            'aligned' - the aligned input sequence
-            'internal_gap_in_ref' - boolean indicating if a gap was inserted in the reference
+        ReferenceAlignment: A named tuple containing the aligned sequence and a
+            boolean indicating if an internal gap was introduced in the
+            reference.
     """
     aligner = PairwiseAligner()
     aligner.mode = "global"
@@ -524,15 +553,17 @@ def align_to_reference(reference_seq: str, input_seq: str) -> ReferenceAlignment
 
 
 def idx_first_and_last_non_gap(sequence: str) -> tuple[int, int]:
-    """
-    Returns the indices of the first and last non-gap ('-') characters in a sequence.
-    If all characters are gaps, returns None for both indices.
+    """Finds the indices of the first and last non-gap characters.
+
+    If all characters are gaps, the behavior is determined by the loop logic
+    (likely resulting in an UnboundLocalError if not handled).
 
     Args:
-        sequence (str): The input sequence containing gaps ('-').
+        sequence (str): The input sequence, which may contain gaps ('-').
 
     Returns:
-        tuple: A tuple (first_non_gap_index, last_non_gap_index).
+        tuple[int, int]: A tuple containing the indices of the first and last
+            non-gap characters.
     """
     for i, char in enumerate(sequence):
         if char != "-":
@@ -550,15 +581,16 @@ def idx_first_and_last_non_gap(sequence: str) -> tuple[int, int]:
 def group_sequences_by_character_at_site(
     seqs: dict[str, str], site: int
 ) -> dict[str, str]:
-    """
-    Group sequences by the character they have at a particular site.
+    """Groups sequences by the character at a specific site.
 
     Args:
-        seqs: Dict of sequence names -> sequence.
-        site: 1-based.
+        seqs (dict[str, str]): A dictionary mapping sequence names to
+            sequences.
+        site (int): The 1-based site to group by.
 
     Returns:
-        dict containing `char at site` -> `sequence name`.
+        dict[str, str]: A dictionary where keys are characters at the given
+            site and values are lists of sequence names.
     """
     bucketed = bucket(seqs.items(), key=lambda x: x[1][site - 1])
     grouped = {}
@@ -569,8 +601,14 @@ def group_sequences_by_character_at_site(
 
 
 def plot_amino_acid_colors(ax: "matplotlib.axes.Axes" = None) -> "matplotlib.axes.Axes":
-    """
-    Simple plot to show amino acid colors.
+    """Creates a simple plot to display amino acid colors.
+
+    Args:
+        ax (matplotlib.axes.Axes, optional): The matplotlib axes to plot on.
+            If None, the current axes are used. Defaults to None.
+
+    Returns:
+        matplotlib.axes.Axes: The axes with the plot.
     """
     ax = ax or mpl.pyplot.gca()
     width = 0.5

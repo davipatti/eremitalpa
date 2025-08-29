@@ -40,8 +40,18 @@ class Tree(dp.Tree):
         msa_plot_kwds: Optional[dict] = None,
         axes: Optional[tuple[mp.axes.Axes, mp.axes.Axes]] = None,
     ) -> tuple[mp.axes.Axes, mp.axes.Axes]:
-        """
-        Plot the tree and multiple sequence alignment.
+        """Plots the tree and multiple sequence alignment.
+
+        Args:
+            msa_plot_kwds (dict, optional): Keyword arguments passed to the
+                multiple sequence alignment plot function. Defaults to None.
+            axes (tuple[mp.axes.Axes, mp.axes.Axes], optional): A tuple of two
+                matplotlib axes to plot on. If None, new axes are created.
+                Defaults to None.
+
+        Returns:
+            tuple[mp.axes.Axes, mp.axes.Axes]: The matplotlib axes used for
+                plotting.
         """
         msa_plot_kwds = {} if msa_plot_kwds is None else msa_plot_kwds
 
@@ -71,9 +81,13 @@ class Tree(dp.Tree):
 
     @property
     def multiple_sequence_alignment(self):
-        """
-        Generate an eremitalpa.MultipleSequence alignment object from a tree. Leaf nodes
-        on the tree must have 'sequence' attributes and taxon labels.
+        """Generates a MultipleSequenceAlignment object from the tree.
+
+        Leaf nodes on the tree must have 'sequence' attributes and taxon
+        labels.
+
+        Returns:
+            MultipleSequenceAlignment: The generated alignment object.
         """
         return MultipleSequenceAlignment(
             [
@@ -93,18 +107,25 @@ class Tree(dp.Tree):
         get_kwds: Optional[dict] = None,
         **kwds,
     ) -> "Tree":
-        """
-        Load a tree from a file.
+        """Loads a tree from a file.
 
         Args:
-            path: Path to file containing tree.
-            schema: See dendropy.Tree.get
-            preserve_underscores: Preserve underscores in taxon labels. (Overwrites
-                'preserve_underscores' key if passed in get_kwds.)
-            outgroup: Name of taxon to use as outgroup.
-            msa_path: Path to fasta file containing leaf sequences.
-            get_kwds: Passed to dendropy.Tree.get.
-            kwds: Passed to add_sequences_to_tree
+            path (str): Path to the file containing the tree.
+            schema (str): The schema of the tree file (e.g., "newick").
+                See dendropy.Tree.get for options.
+            preserve_underscores (bool): If True, preserve underscores in
+                taxon labels.
+            outgroup (str, optional): The name of the taxon to use as the
+                outgroup. Defaults to None.
+            msa_path (str, optional): Path to a FASTA file containing leaf
+                sequences. Defaults to None.
+            get_kwds (dict, optional): Keyword arguments passed to
+                dendropy.Tree.get. Defaults to None.
+            **kwds: Additional keyword arguments passed to
+                add_sequences_to_tree.
+
+        Returns:
+            Tree: The loaded tree object.
         """
         get_kwds = {} if get_kwds is None else get_kwds
 
@@ -127,24 +148,19 @@ class Tree(dp.Tree):
         return tree
 
     def clade_bbox(self, taxon_labels: list[str]) -> dict[str, float]:
-        """
-        Calculate the bounding box of a clade.
+        """Calculates the bounding box of a clade.
 
-        The bounding box is determined by finding the most recent common ancestor (MRCA)
-        of the specified taxa and then calculating the minimum and maximum x and y coordinates
-        of its child nodes.
+        The bounding box is determined by finding the most recent common
+        ancestor (MRCA) of the specified taxa and then calculating the
+        minimum and maximum x and y coordinates of its child nodes.
 
         Args:
-            taxon_labels : list[str]
-                A list of taxon labels that define the clade.
+            taxon_labels (list[str]): A list of taxon labels that define the
+                clade.
 
         Returns:
-            dict[str, float]
-                A dictionary containing the coordinates of the bounding box with keys:
-                - 'min_x': The minimum x-coordinate (left edge)
-                - 'max_x': The maximum x-coordinate (right edge)
-                - 'min_y': The minimum y-coordinate (bottom edge)
-                - 'max_y': The maximum y-coordinate (top edge)
+            dict[str, float]: A dictionary containing the coordinates of the
+                bounding box with keys: 'min_x', 'max_x', 'min_y', 'max_y'.
         """
         mrca = self.mrca(taxon_labels=taxon_labels)
         return {
@@ -164,20 +180,27 @@ class Tree(dp.Tree):
         label_kwds: Optional[dict] = None,
         **kwds,
     ):
-        """
-        Plot a rectangle around the bounding box of a clade.
+        """Plots a rectangle around the bounding box of a clade.
 
         Args:
-            taxon_labels: A list of taxon labels that define the clade.
-            ax: The matplotlib axes to plot on.
-            extend_right: Amount to extend the box to the right, in ax coordinates.
-            extend_down: Amount to extend the box down, in ax coordinates.
-            label: Label to apply to the box.
-            label_kwds: Passed to matplotlib.axes.Axes.text
-            **kwds: Keyword arguments passed to matplotlib.patches.Rectangle.
+            taxon_labels (list[str]): A list of taxon labels that define the
+                clade.
+            ax (mp.axes.Axes, optional): The matplotlib axes to plot on.
+                Defaults to None.
+            extend_right (float): Amount to extend the box to the right, in
+                axes coordinates.
+            extend_down (float): Amount to extend the box down, in axes
+                coordinates.
+            label (str, optional): A label to apply to the box. Defaults to
+                None.
+            label_kwds (dict, optional): Keyword arguments passed to
+                matplotlib.axes.Axes.text. Defaults to None.
+            **kwds: Additional keyword arguments passed to
+                matplotlib.patches.Rectangle.
 
         Returns:
-            matplotlib.patches.Rectangle: The rectangle patch that was added to the axes.
+            matplotlib.patches.Rectangle: The rectangle patch added to the
+                axes.
         """
         ax = ax or plt.gca()
         bbox = self.clade_bbox(taxon_labels)
@@ -225,15 +248,20 @@ def compute_tree_layout(
     copy: bool = False,
     round_brlens: Optional[int] = None,
 ) -> dp.Tree:
-    """Compute layout parameters for a tree.
+    """Computes layout parameters for a tree.
 
-    Each node gets _x and _y values. The tree gets _xlim and _ylim values (tuples).
+    Each node gets _x and _y values. The tree gets _xlim and _ylim values
+    (tuples).
 
     Args:
-        tree: Dendropy or eremitalpa Tree object.
-        has_brlens: Does the tree have branch lengths?
-        copy: Make a fresh copy of the tree.
-        round_brlens: Round branch lengths to this number of digits.
+        tree (dp.Tree): The tree to lay out.
+        has_brlens (bool): Whether the tree has branch lengths.
+        copy (bool): If True, a fresh copy of the tree is made.
+        round_brlens (int, optional): The number of digits to round branch
+            lengths to. Defaults to None.
+
+    Returns:
+        dp.Tree: The tree with layout parameters.
     """
     if copy:
         tree = dp.Tree(tree)
@@ -292,62 +320,48 @@ def plot_tree(
     scale_bar: Optional[bool] = True,
     scale_bar_x_start: float = 0.0,
 ) -> mp.axes.Axes:
-    """
-    Plot a dendropy tree object.
+    """Plots a dendropy tree object.
 
-    Tree nodes are plotted in their current order. So, to ladderize, call tree.ladderize() before
-    plotting.
+    Tree nodes are plotted in their current order. To ladderize, call
+    tree.ladderize() before plotting.
 
     Args:
-        tree: Dendropy or eremitalpa Tree object.
-        has_brlens: Does the tree have branch lengths? If not, all branch lengths are plotted
-            length 1.
-        edge_kws: Keyword arguments for edges, passed to
-            matplotlib.collections.LineCollection
-        leaf_kws: Keyword arguments for leafs, passed to ax.scatter.
-            For arguments that can be a vector, the order and length should
-            match `tree.leaf_node_iter()`.
-        label_kwds: Passed to plt.text.
-        internal_kws: Keyword arguments for internal nodes. Passed to
-            ax.scatter. For arguments  that can be a vector, the order and
-            length should match `tree.internal_nodes()`.
-        ax: Matplotlib axes.
-        labels: Taxon labels to annotate, or `"all"`.
-        compute_layout: Compute the layout or not. If the tree nodes
-            already have _x and _y attributes, then just plot it.
-        fill_dotted_lines: Show dotted lines from leaves to the right hand edge of the tree.
-        round_brlens: Round branch lengths to this many decimal places. Passed
-            to `compute_tree_layout`.
-        color_leaves_by_site_aa: Color leaves by each taxon's amino acid at this site
-            (1-based). Overwrites the `c` kwarg in `leaf_kws`. `sequences` must be passed.
-        hide_aa: A string of amino acid 1-letter codes to hide when coloring
-            taxa by amino acids at a site. Only has an affect when
-            `color_leaves_by_site_aa` is passed.
-        color_internal_nodes_by_site_aa: Same behaviour as
+        tree (dp.Tree | Tree): The tree to plot.
+        has_brlens (bool): If False, all branch lengths are plotted as 1.
+        edge_kws (dict): Keyword arguments for edges, passed to
+            matplotlib.collections.LineCollection.
+        leaf_kws (dict): Keyword arguments for leaves, passed to ax.scatter.
+        label_kwds (dict): Keyword arguments passed to plt.text.
+        internal_kws (dict): Keyword arguments for internal nodes, passed to
+            ax.scatter.
+        ax (mp.axes.Axes, optional): The matplotlib axes to plot on. Defaults
+            to None.
+        labels (Optional[Union[Iterable[str], Literal["all"]]]): Taxon labels
+            to annotate, or "all".
+        compute_layout (bool): If True, compute the layout. If False, assumes
+            the tree nodes already have _x and _y attributes.
+        fill_dotted_lines (bool): If True, show dotted lines from leaves to
+            the right-hand edge of the tree.
+        round_brlens (int, optional): The number of decimal places to round
+            branch lengths to. Passed to `compute_tree_layout`.
+        color_leaves_by_site_aa (int, optional): Color leaves by the amino
+            acid at this site (1-based). Overwrites 'c' in `leaf_kws`.
+            Requires `sequences`.
+        hide_aa (str, optional): A string of amino acids to hide when
+            coloring by site.
+        color_internal_nodes_by_site_aa (int, optional): Same as
             `color_leaves_by_site_aa` but for internal nodes.
-        sequences: A mapping of taxon labels and to sequences. Required for
-            `color_leaves_by_site_aa`.
-        jitter_x: Add a small amount of noise to the x value of the leaves to avoid over plotting.
-            Either pass a float (the amount of noise) or 'auto' to try to automatically calculate a
-            suitable value. 'auto' tries to calculate the fundamental 'unit' of branch length in the
-            tree and then jitters x values by 1/2 of this value in either direction. See
-            estimate_unit_branch_length for more information. Currently, positions of labels are
-            not jittered.
-        scale_bar: Show a scale bar at the bottom of the tree.
-        scale_bar_x_start: The leftmost x position of the scale bar.
+        sequences (dict[str, str], optional): A mapping of taxon labels to
+            sequences. Required for coloring by site.
+        jitter_x (float | str, optional): Amount of noise to add to the x
+            value of leaves to avoid overplotting. Can be a float or 'auto'.
+        scale_bar (bool): If True, show a scale bar.
+        scale_bar_x_start (float): The leftmost x position of the scale bar.
 
     Returns:
-        tuple containing (Tree, ax). The tree and matplotlib ax. The tree has
-            these additional attributes:
-
-                _xlim (tuple) Min and max x value of nodes.
-                _ylim (tuple) Min and max y value of nodes.
-
-            Each node has these attributes:
-
-                _x (number) X-coordinate of the nodes layout
-                _y (number) Y-coordinate of the node's layout
-
+        mp.axes.Axes: The matplotlib axes with the plotted tree. The tree
+            object is returned with added attributes: _xlim, _ylim, and _x, _y
+            on each node.
     """
     ax = plt.gca() if ax is None else ax
 
@@ -530,17 +544,17 @@ def plot_tree(
 def node_x_y(
     nodes: Iterable[dp.Node], jitter_x: Optional[float] = None
 ) -> tuple[tuple, tuple]:
-    """
-    x and y coordinates of nodes.
+    """Gets the x and y coordinates of nodes.
 
     Args:
-        nodes (Iterable[dp.Node]): An iterable collection of dp.Node objects.
-        jitter_x (Optional[float]): The amount of jitter to add to x coordinates. X is jittered
-            by a quarter of this value above and below.
+        nodes (Iterable[dp.Node]): An iterable of dendropy Node objects.
+        jitter_x (float, optional): The amount of jitter to add to the x
+            coordinates. X is jittered by a quarter of this value in both
+            directions. Defaults to None.
 
     Returns:
-        tuple[tuple, tuple]: A tuple containing two tuples, the first with all x coordinates and the
-            second with all y coordinates.
+        tuple[tuple, tuple]: A tuple containing two tuples: one for x
+            coordinates and one for y coordinates.
     """
     if jitter_x is None:
         return zip(*((node._x, node._y) for node in nodes))
@@ -552,15 +566,14 @@ def node_x_y(
 
 
 def node_x_y_from_taxon_label(tree: Tree, taxon_label: str) -> tuple[float, float]:
-    """
-    Find the x and y attributes of a node in a tree from a taxon label.
+    """Finds the x and y attributes of a node from its taxon label.
 
     Args:
-        tree: Tree
-        taxon_label: str
+        tree (Tree): The tree to search in.
+        taxon_label (str): The taxon label of the node.
 
     Returns:
-        tuple[float, float]
+        tuple[float, float]: The x and y coordinates of the node.
     """
     node = tree.find_node_with_taxon_label(taxon_label)
     return node._x, node._y
@@ -569,14 +582,14 @@ def node_x_y_from_taxon_label(tree: Tree, taxon_label: str) -> tuple[float, floa
 def plot_leaves_with_labels(
     tree: dp.Tree, labels: list[str], ax: mp.axes.Axes = None, **kws
 ):
-    """
-    Plot leaves that have taxon labels in labels.
+    """Plots leaves that have taxon labels in a given list.
 
     Args:
-        tree
-        labels: Taxon labels to plot.
-        ax: Matplotlib ax
-        **kws: Passed to plt.scatter
+        tree (dp.Tree): The tree to plot.
+        labels (list[str]): A list of taxon labels to plot.
+        ax (mp.axes.Axes, optional): The matplotlib axes to plot on.
+            Defaults to None.
+        **kws: Additional keyword arguments passed to plt.scatter.
     """
     ax = plt.gca() if ax is None else ax
     s = kws.pop("s", 20)
@@ -618,27 +631,31 @@ def plot_subs_on_tree(
     xytext_transform: tuple[float, float] = (1.0, 1.0),
     **kwds,
 ) -> Counter:
-    """
-    Plot substitutions on a tree. This function plots substitutions on the tree by finding
-    substitutions between each node and its parent node. The substitutions are then plotted at the
-    midpoint of the edge between the node and its parent node.
+    """Plots substitutions on a tree.
+
+    This function plots substitutions on the tree by finding substitutions
+    between each node and its parent node. The substitutions are then plotted
+    at the midpoint of the edge between the node and its parent.
 
     Args:
-        tree (dendropy.Tree): The tree to annotate.
+        tree (dp.Tree): The tree to annotate.
         sequences (dict[str, str]): A mapping of node labels to sequences.
-        exclude_leaves (bool): If True, exclude leaves from getting substitutions.
-        site_offset (int): Value added to substitution sites. E.g. if site '1' is actually at
-            index 16 in the sequences, then pass 16.
-        ignore_chars (str): Substitutions involving characters in this string will not be shown in
-            substitutions.
-        arrow_length (float): The length of the arrow pointing to the mutation.
-        arrow_facecolor (str): The facecolor of the arrow pointing to the mutation.
-        fontsize (float): The fontsize of the text.
-        xytext_transform (tuple(float, float)): Multipliers for the xytext offsets.
-        **kwds: Other keyword arguments to pass to plt.annotate.
+        exclude_leaves (bool): If True, exclude leaves from substitution
+            plotting.
+        site_offset (int): Value to add to substitution site numbers.
+        ignore_chars (str): Substitutions involving these characters will not
+            be shown.
+        arrow_length (float): The length of the arrow pointing to the
+            mutation.
+        arrow_facecolor (str): The face color of the arrow.
+        fontsize (float): The font size of the text.
+        xytext_transform (tuple[float, float]): Multipliers for the xytext
+            offsets.
+        **kwds: Other keyword arguments passed to plt.annotate.
 
     Returns:
-        Counter containing the number of times each substitution appears in the tree.
+        Counter: A counter of the number of times each substitution appears
+            in the tree.
     """
     ignore = set(ignore_chars)
 
@@ -694,9 +711,16 @@ def plot_subs_on_tree(
 
 
 def get_label(node: dp.Node):
-    """
-    Return the label of a node. If the node itself has a label, use that. Otherwise
-    return the label of the node's taxon.
+    """Gets the label of a node.
+
+    If the node itself has a label, that is returned. Otherwise, the label
+    of the node's taxon is returned.
+
+    Args:
+        node (dp.Node): The node to get the label from.
+
+    Returns:
+        str: The label of the node.
     """
     if node.label is not None:
         return node.label
@@ -705,7 +729,16 @@ def get_label(node: dp.Node):
 
 
 def taxon_in_node_labels(labels, node):
-    """True if node has taxon label in labels, else False"""
+    """Checks if a node's taxon label is in a set of labels.
+
+    Args:
+        labels (iterable): A collection of labels to check against.
+        node (dp.Node): The node to check.
+
+    Returns:
+        bool: True if the node's taxon label is in the labels, False
+            otherwise.
+    """
     try:
         return node.taxon.label in labels
     except AttributeError:
@@ -713,7 +746,15 @@ def taxon_in_node_labels(labels, node):
 
 
 def taxon_in_node_label(label, node):
-    """True if a node has a matching taxon label"""
+    """Checks if a node has a matching taxon label.
+
+    Args:
+        label (str): The label to check for.
+        node (dp.Node): The node to check.
+
+    Returns:
+        bool: True if the node's taxon label matches, False otherwise.
+    """
     try:
         return node.taxon.label == label
     except AttributeError:
