@@ -265,7 +265,7 @@ def compute_tree_layout(
 
 
 def plot_tree(
-    tree: dp.Tree,
+    tree: dp.Tree | Tree,
     has_brlens: bool = True,
     edge_kws: dict = DEFAULT_EDGE_KWS,
     leaf_kws: dict = DEFAULT_LEAF_KWS,
@@ -289,7 +289,7 @@ def plot_tree(
     plotting.
 
     Args:
-        tree
+        tree: Dendropy or eremitalpa Tree object.
         has_brlens: Does the tree have branch lengths? If not, all branch lengths are plotted
             length 1.
         edge_kws: Keyword arguments for edges, passed to
