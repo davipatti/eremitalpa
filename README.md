@@ -1,16 +1,13 @@
 # eremitalpa
 
+[![tests](https://github.com/davipatti/eremitalpa/actions/workflows/run-tests.yml/badge.svg)](https://github.com/davipatti/eremitalpa/actions/workflows/run-tests.yml)
+
 Plot dendropy trees.
 
 ## Installation
 
-Dependencies
-
-- [matplotlib](https://matplotlib.org/)
-- [dendropy](https://dendropy.org/)
-
 ```bash
-pip install git+https://github.com/davipatti/eremitalpa.git
+pip install eremitalpa
 ```
 
 ## Basic usage:
@@ -20,6 +17,5 @@ import eremitalpa as ere
 tree = ere.Tree.from_disk("tree.tre")
 ere.plot_dendropy_tree(tree)
 ```
-
 
 Check out the [docs](https://davipatti.github.io/eremitalpa/).
