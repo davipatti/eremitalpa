@@ -276,6 +276,7 @@ def plot_tree(
     compute_layout: bool = True,
     fill_dotted_lines: bool = False,
     color_leaves_by_site_aa: Optional[int] = None,
+    hide_aa: Optional[str] = None,
     color_internal_nodes_by_site_aa: Optional[int] = None,
     sequences: Optional[dict[str, str]] = None,
     jitter_x: Optional[float | str] = None,
@@ -296,20 +297,23 @@ def plot_tree(
             matplotlib.collections.LineCollection
         leaf_kws: Keyword arguments for leafs, passed to ax.scatter.
             For arguments that can be a vector, the order and length should
-            match tree.leaf_node_iter().
+            match `tree.leaf_node_iter()`.
         label_kwds: Passed to plt.text.
         internal_kws: Keyword arguments for internal nodes. Passed to
-            ax.scatter. For arguments that can be a vector, the order and
-            length should match tree.internal_nodes().
-        ax: Matplotlib ax.
-        labels: Taxon labels to annotate, or "all".
+            ax.scatter. For arguments  that can be a vector, the order and
+            length should match `tree.internal_nodes()`.
+        ax: Matplotlib axes.
+        labels: Taxon labels to annotate, or `"all"`.
         compute_layout: Compute the layout or not. If the tree nodes
             already have _x and _y attributes, then just plot.
         fill_dotted_lines: Show dotted lines from leaves to the right hand edge of the tree.
-        color_leaves_by_site_aa: Pass an integer to color the leaves by the amino acid at this site
-            (1-based). This will overwrite the 'c' kwarg in leaf_kws. `sequences` must be passed.
-        color_internal_nodes_by_site_aa: Same behaviour as color_leaves_by_site_aa but for internal
-            nodes.
+        color_leaves_by_site_aa: Color leaves by each taxon's amino acid at this site
+            (1-based). Overwrites the `c` kwarg in `leaf_kws`. `sequences` must be passed.
+        hide_aa: A string of amino acid 1-letter codes to hide when coloring
+            taxa by amino acids at a site. Only has an affect when
+            `color_leaves_by_site_aa` is passed.
+        color_internal_nodes_by_site_aa: Same behaviour as
+            `color_leaves_by_site_aa` but for internal nodes.
         sequences: A mapping of taxon labels and to sequences. Required for
             `color_leaves_by_site_aa`.
         jitter_x: Add a small amount of noise to the x value of the leaves to avoid over plotting.
@@ -384,6 +388,8 @@ def plot_tree(
         logging.info(f"Auto jitter_x: {jitter_x}")
 
     # Draw leaves
+    hide_aa = set(hide_aa or "")
+
     if color_leaves_by_site_aa is not None:
 
         # Group leaves by amino acid at site so that each group can be colored and a label passed
@@ -401,6 +407,7 @@ def plot_tree(
         aa_groups = {
             aa: list(nodes)
             for aa, nodes in itertools.groupby(sorted_nodes, key=_get_aa)
+            if aa not in hide_aa
         }
 
         # Order the groups by size so that the smallest groups are plotted last
