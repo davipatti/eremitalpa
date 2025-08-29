@@ -220,17 +220,20 @@ class Tree(dp.Tree):
 
 
 def compute_tree_layout(
-    tree: dp.Tree, has_brlens: bool = True, copy: bool = False
+    tree: dp.Tree,
+    has_brlens: bool = True,
+    copy: bool = False,
+    round_brlens: Optional[int] = None,
 ) -> dp.Tree:
     """Compute layout parameters for a tree.
 
-    Each node gets _x and _y values.
-    The tree gets _xlim and _ylim values (tuples).
+    Each node gets _x and _y values. The tree gets _xlim and _ylim values (tuples).
 
     Args:
-        tree
+        tree: Dendropy or eremitalpa Tree object.
         has_brlens: Does the tree have branch lengths?
         copy: Make a fresh copy of the tree.
+        round_brlens: Round branch lengths to this number of digits.
     """
     if copy:
         tree = dp.Tree(tree)
@@ -245,7 +248,12 @@ def compute_tree_layout(
         if node.parent_node is None:
             node._x = 0
         else:
-            node._x = node.edge.length + node.parent_node._x
+            length = (
+                round(node.edge.length, round_brlens)
+                if round_brlens is not None
+                else node.edge.length
+            )
+            node._x = length + node.parent_node._x
 
     # Compute y for leaf nodes
     for _y, node in enumerate(tree.leaf_node_iter()):
@@ -275,6 +283,7 @@ def plot_tree(
     label_kws: dict = DEFAULT_LABEL_KWS,
     compute_layout: bool = True,
     fill_dotted_lines: bool = False,
+    round_brlens: Optional[int] = None,
     color_leaves_by_site_aa: Optional[int] = None,
     hide_aa: Optional[str] = None,
     color_internal_nodes_by_site_aa: Optional[int] = None,
@@ -305,8 +314,10 @@ def plot_tree(
         ax: Matplotlib axes.
         labels: Taxon labels to annotate, or `"all"`.
         compute_layout: Compute the layout or not. If the tree nodes
-            already have _x and _y attributes, then just plot.
+            already have _x and _y attributes, then just plot it.
         fill_dotted_lines: Show dotted lines from leaves to the right hand edge of the tree.
+        round_brlens: Round branch lengths to this many decimal places. Passed
+            to `compute_tree_layout`.
         color_leaves_by_site_aa: Color leaves by each taxon's amino acid at this site
             (1-based). Overwrites the `c` kwarg in `leaf_kws`. `sequences` must be passed.
         hide_aa: A string of amino acid 1-letter codes to hide when coloring
@@ -351,7 +362,11 @@ def plot_tree(
     edge_kws = {**DEFAULT_EDGE_KWS, **edge_kws}
     internal_kws = {**DEFAULT_INTERNAL_KWS, **internal_kws}
 
-    tree = compute_tree_layout(tree, has_brlens) if compute_layout else tree
+    tree = (
+        compute_tree_layout(tree, has_brlens, round_brlens=round_brlens)
+        if compute_layout
+        else tree
+    )
 
     # Draw edges
     edges = []
